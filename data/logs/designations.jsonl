@@ -640,3 +640,11 @@
 {"injury_body_part": "Chest", "injury_status": "Out", "name": "Jadarian Price", "player_id": "13286", "practice_participation": null, "recorded_at": "2026-10-03T00:09:31Z", "team": "Turbo Llamas", "week": 4}
 {"injury_body_part": null, "injury_status": null, "name": "Brandon Jones", "player_id": "6911", "practice_participation": null, "recorded_at": "2026-10-03T17:38:12Z", "team": "Crimson Marmots", "week": 4}
 {"injury_body_part": "Hamstring", "injury_status": "Doubtful", "name": "Terry McLaurin", "player_id": "5927", "practice_participation": null, "recorded_at": "2026-10-03T17:38:12Z", "team": "Iron Wombats", "week": 4}
+{"injury_body_part": null, "injury_status": null, "name": "Matt Gay", "player_id": "6083", "practice_participation": null, "recorded_at": "2026-10-04T15:55:54Z", "team": "Crimson Marmots", "week": 4}
+{"injury_body_part": null, "injury_status": null, "name": "Matthew Stafford", "player_id": "421", "practice_participation": null, "recorded_at": "2026-10-04T15:55:54Z", "team": "Crimson Marmots", "week": 4}
+{"injury_body_part": "Hamstring", "injury_status": "Out", "name": "Terry McLaurin", "player_id": "5927", "practice_participation": null, "recorded_at": "2026-10-04T15:55:54Z", "team": "Iron Wombats", "week": 4}
+{"injury_body_part": null, "injury_status": null, "name": "Edgerrin Cooper", "player_id": "11687", "practice_participation": null, "recorded_at": "2026-10-04T15:55:54Z", "team": "Neon Walruses", "week": 4}
+{"injury_body_part": null, "injury_status": null, "name": "Jacob Rodriguez", "player_id": "13453", "practice_participation": null, "recorded_at": "2026-10-04T15:55:54Z", "team": "Neon Walruses", "week": 4}
+{"injury_body_part": null, "injury_status": null, "name": "Foyesade Oluokun", "player_id": "5332", "practice_participation": null, "recorded_at": "2026-10-04T15:55:54Z", "team": "Quantum Ferrets", "week": 4}
+{"injury_body_part": null, "injury_status": null, "name": "Fred Warner", "player_id": "5041", "practice_participation": null, "recorded_at": "2026-10-04T15:55:54Z", "team": "Quantum Ferrets", "week": 4}
+{"injury_body_part": "Chest", "injury_status": "IR", "name": "Jadarian Price", "player_id": "13286", "practice_participation": null, "recorded_at": "2026-10-04T15:55:54Z", "team": "Turbo Llamas", "week": 4}
