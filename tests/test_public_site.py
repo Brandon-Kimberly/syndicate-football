@@ -275,6 +275,16 @@ class TestTheWorkflows(unittest.TestCase):
                          "the legacy sample report is retired")
         self.assertFalse(os.path.exists(os.path.join(REPO, "scripts", "make_sample_report.py")))
 
+    def test_the_official_data_lands_over_the_checkout(self):
+        """2026-10-04, the first build from an official run's data (#33): `gh run download -D data`
+        refuses to write over a file that exists, and the checkout already holds the tracked logs
+        the artifact carries ("data/logs/as_played_results_2026.json: file exists"). The artifact
+        goes to a fresh directory, then over data/, the official run's copy winning."""
+        wf = self.read("pages-site.yml")
+        self.assertNotRegex(wf, r"-n site-data -D data\b", "straight onto the checkout: fails on the first tracked file")
+        self.assertRegex(wf, r'-n site-data -D "\$RUNNER_TEMP/site-data"')
+        self.assertRegex(wf, r'cp -R "\$RUNNER_TEMP/site-data/\." data/')
+
     def test_the_pages_workflow_spends_no_odds_credits(self):
         """2026-09-30: the account ran out of its monthly odds credits. Until an official run has
         kept its data, every site rebuild synced here with the key -- a push to webui/ cost
