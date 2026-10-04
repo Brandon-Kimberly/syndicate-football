@@ -83,7 +83,11 @@ jobs:
             fi
           done
           if [ -n "$found" ]; then
-            gh run download "$found" --repo "${{ github.repository }}" -n site-data -D data
+            # A fresh directory, then over data/: `gh run download` refuses to write over a file
+            # that exists, and the checkout already holds the tracked logs the artifact carries
+            # (#33, the first build from an official run's data). The official run's copy wins.
+            gh run download "$found" --repo "${{ github.repository }}" -n site-data -D "$RUNNER_TEMP/site-data"
+            cp -R "$RUNNER_TEMP/site-data/." data/
             echo "official=true" >> "$GITHUB_OUTPUT"
             echo "Using the data of official run $found"
           else
