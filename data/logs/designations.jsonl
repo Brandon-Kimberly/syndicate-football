@@ -652,3 +652,11 @@
 {"injury_body_part": null, "injury_status": null, "name": "Kenyon Sadiq", "player_id": "13330", "practice_participation": null, "recorded_at": "2026-10-04T17:51:25Z", "team": "Quantum Ferrets", "week": 4}
 {"injury_body_part": "Lower Body", "injury_status": "Questionable", "name": "Saquon Barkley", "player_id": "4866", "practice_participation": null, "recorded_at": "2026-10-04T17:51:25Z", "team": "Turbo Llamas", "week": 4}
 {"injury_body_part": "Undisclosed", "injury_status": "Questionable", "name": "Ja'Marr Chase", "player_id": "7564", "practice_participation": null, "recorded_at": "2026-10-04T18:14:39Z", "team": "Turbo Llamas", "week": 4}
+{"injury_body_part": "Foot", "injury_status": "Out", "name": "Ladd McConkey", "player_id": "11635", "practice_participation": null, "recorded_at": "2026-10-05T21:19:42Z", "team": "Cosmic Badgers", "week": 4}
+{"injury_body_part": "Groin", "injury_status": "Questionable", "name": "Tee Higgins", "player_id": "6801", "practice_participation": null, "recorded_at": "2026-10-05T21:19:42Z", "team": "Iron Wombats", "week": 4}
+{"injury_body_part": "Achilles", "injury_status": "Out", "name": "Edgerrin Cooper", "player_id": "11687", "practice_participation": null, "recorded_at": "2026-10-05T21:19:42Z", "team": "Neon Walruses", "week": 4}
+{"injury_body_part": "Thumb", "injury_status": "Questionable", "name": "Kyle Monangai", "player_id": "12534", "practice_participation": null, "recorded_at": "2026-10-05T21:19:42Z", "team": "Polar Yetis", "week": 4}
+{"injury_body_part": null, "injury_status": null, "name": "Mike Evans", "player_id": "2216", "practice_participation": null, "recorded_at": "2026-10-05T21:19:42Z", "team": "Polar Yetis", "week": 4}
+{"injury_body_part": "Hamstring", "injury_status": "Questionable", "name": "Rashee Rice", "player_id": "10229", "practice_participation": null, "recorded_at": "2026-10-05T21:19:42Z", "team": "Polar Yetis", "week": 4}
+{"injury_body_part": "Concussion", "injury_status": "Out", "name": "Ja'Marr Chase", "player_id": "7564", "practice_participation": null, "recorded_at": "2026-10-05T21:19:42Z", "team": "Turbo Llamas", "week": 4}
+{"injury_body_part": "Hamstring", "injury_status": "Out", "name": "Saquon Barkley", "player_id": "4866", "practice_participation": null, "recorded_at": "2026-10-05T21:19:42Z", "team": "Turbo Llamas", "week": 4}
