@@ -871,3 +871,5 @@
 {"injury_body_part": "Toe", "injury_status": "Out", "name": "Kyle Monangai", "player_id": "12534", "practice_participation": null, "recorded_at": "2026-10-09T19:01:16Z", "team": "Polar Yetis", "week": 5}
 {"injury_body_part": "Ankle", "injury_status": "Questionable", "name": "Ashton Jeanty", "player_id": "12527", "practice_participation": null, "recorded_at": "2026-10-09T19:01:16Z", "team": "Rocket Pandas", "week": 5}
 {"injury_body_part": "Hip", "injury_status": "Questionable", "name": "Quentin Lake", "player_id": "8330", "practice_participation": null, "recorded_at": "2026-10-09T19:01:16Z", "team": "Rocket Pandas", "week": 5}
+{"injury_body_part": "Hamstring", "injury_status": "Out", "name": "Stefon Diggs", "player_id": "2449", "practice_participation": null, "recorded_at": "2026-10-09T19:36:05Z", "team": "Crimson Marmots", "week": 5}
+{"injury_body_part": "Hamstring", "injury_status": "Questionable", "name": "Caleb Williams", "player_id": "11560", "practice_participation": null, "recorded_at": "2026-10-09T19:36:05Z", "team": "Quantum Ferrets", "week": 5}
