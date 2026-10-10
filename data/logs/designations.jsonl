@@ -873,3 +873,7 @@
 {"injury_body_part": "Hip", "injury_status": "Questionable", "name": "Quentin Lake", "player_id": "8330", "practice_participation": null, "recorded_at": "2026-10-09T19:01:16Z", "team": "Rocket Pandas", "week": 5}
 {"injury_body_part": "Hamstring", "injury_status": "Out", "name": "Stefon Diggs", "player_id": "2449", "practice_participation": null, "recorded_at": "2026-10-09T19:36:05Z", "team": "Crimson Marmots", "week": 5}
 {"injury_body_part": "Hamstring", "injury_status": "Questionable", "name": "Caleb Williams", "player_id": "11560", "practice_participation": null, "recorded_at": "2026-10-09T19:36:05Z", "team": "Quantum Ferrets", "week": 5}
+{"injury_body_part": null, "injury_status": null, "name": "Ka'imi Fairbairn", "player_id": "3451", "practice_participation": null, "recorded_at": "2026-10-10T18:02:10Z", "team": "Crimson Marmots", "week": 5}
+{"injury_body_part": "Coach's Decision", "injury_status": "Out", "name": "Marvin Harrison", "player_id": "11628", "practice_participation": null, "recorded_at": "2026-10-10T18:02:10Z", "team": "Crimson Marmots", "week": 5}
+{"injury_body_part": null, "injury_status": null, "name": "Jeremiyah Love", "player_id": "13287", "practice_participation": null, "recorded_at": "2026-10-10T18:02:10Z", "team": "Polar Yetis", "week": 5}
+{"injury_body_part": "Back", "injury_status": "Questionable", "name": "Carnell Tate", "player_id": "13279", "practice_participation": null, "recorded_at": "2026-10-10T18:02:10Z", "team": "Turbo Llamas", "week": 5}
