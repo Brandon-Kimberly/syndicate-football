@@ -129,3 +129,16 @@
 {"espn_rows": 106, "git_commit": "be7b462", "schema_version": 1, "season": "2026", "synced_at": "2026-10-05T03:07:53Z", "total_rows": 143, "week": 4}
 {"espn_rows": 103, "git_commit": "be7b462", "schema_version": 1, "season": "2026", "synced_at": "2026-10-06T20:58:16Z", "total_rows": 138, "week": 5}
 {"espn_rows": 103, "git_commit": "be7b462", "schema_version": 1, "season": "2026", "synced_at": "2026-10-07T17:53:19Z", "total_rows": 138, "week": 5}
+{"espn_rows": 109, "git_commit": "be7b462", "schema_version": 1, "season": "2026", "synced_at": "2026-10-04T17:51:14Z", "total_rows": 146, "week": 4}
+{"espn_rows": 109, "git_commit": "499fe07", "schema_version": 1, "season": "2026", "synced_at": "2026-10-04T18:14:17Z", "total_rows": 146, "week": 4}
+{"espn_rows": 106, "git_commit": "998fabc", "schema_version": 1, "season": "2026", "synced_at": "2026-10-05T21:19:35Z", "total_rows": 143, "week": 4}
+{"espn_rows": 103, "git_commit": "52929cb", "schema_version": 1, "season": "2026", "synced_at": "2026-10-06T19:06:25Z", "total_rows": 139, "week": 5}
+{"espn_rows": 103, "git_commit": "8009b74", "schema_version": 1, "season": "2026", "synced_at": "2026-10-06T19:54:14Z", "total_rows": 138, "week": 5}
+{"espn_rows": 102, "git_commit": "be0c519", "schema_version": 1, "season": "2026", "synced_at": "2026-10-07T19:33:02Z", "total_rows": 138, "week": 5}
+{"espn_rows": 102, "git_commit": "70c17f6", "schema_version": 1, "season": "2026", "synced_at": "2026-10-07T20:02:14Z", "total_rows": 138, "week": 5}
+{"espn_rows": 103, "git_commit": "28862b6", "schema_version": 1, "season": "2026", "synced_at": "2026-10-08T19:14:08Z", "total_rows": 137, "week": 5}
+{"espn_rows": 103, "git_commit": "d0df3b0", "schema_version": 1, "season": "2026", "synced_at": "2026-10-08T19:27:53Z", "total_rows": 137, "week": 5}
+{"espn_rows": 103, "git_commit": "e14016a", "schema_version": 1, "season": "2026", "synced_at": "2026-10-08T20:01:10Z", "total_rows": 137, "week": 5}
+{"espn_rows": 102, "git_commit": "4ad53c6", "schema_version": 1, "season": "2026", "synced_at": "2026-10-09T19:01:07Z", "total_rows": 135, "week": 5}
+{"espn_rows": 102, "git_commit": "77ecaba", "schema_version": 1, "season": "2026", "synced_at": "2026-10-09T19:35:50Z", "total_rows": 135, "week": 5}
+{"espn_rows": 100, "git_commit": "90dc6bb", "schema_version": 1, "season": "2026", "synced_at": "2026-10-10T18:02:01Z", "total_rows": 134, "week": 5}
