@@ -150,6 +150,10 @@ def legend_html(overlay):
             f"<th>real team</th></tr>{rows}</table></div>")
 
 
+def _r(x, nd=3):
+    return None if x is None else round(float(x), nd)
+
+
 def append_predictions_log(week, season_outcomes, outlook, path=None, manifest=None,
                            commit=None, backfilled=False, provenance=None, canonical=False):
     """The weekly prediction record (storage.predictions_log_file) F18's decision
@@ -178,7 +182,17 @@ def append_predictions_log(week, season_outcomes, outlook, path=None, manifest=N
         "matchups": [{"a": m.get("a"), "b": m.get("b"), "p_a": m.get("p_a"), "p_b": m.get("p_b"),
                       "se": m.get("se")} for m in (outlook.get("matchups") or [])],
         "median": {t: {"opponent": d.get("opponent"), "p_beat_median": d.get("p_beat_median"),
-                       "expected_total": d.get("expected_total"), "sd_total": d.get("sd_total")}
+                       "expected_total": d.get("expected_total"), "sd_total": d.get("sd_total"),
+                       # 2026-10-11: the lineup behind the total and the three factors of each
+                       # player's expectation (baseline x environment x script), so a gap between
+                       # quoted and realised totals can be traced to a stage. Additive; `flag` is
+                       # display-only and stays out.
+                       "expected_pre_total": d.get("expected_pre_total"),
+                       "lineup": [{"slot": p.get("slot"), "name": p.get("name"), "nfl_team": p.get("nfl_team"),
+                                   "expected": _r(p.get("expected")), "sd": _r(p.get("sd")),
+                                   "baseline_mean": _r(p.get("baseline_mean")),
+                                   "env_ratio": _r(p.get("env_ratio"), 4), "script": _r(p.get("script"), 4)}
+                                  for p in (d.get("lineup") or [])]}
                    for t, d in (outlook.get("teams") or {}).items()},
         "outlook_sims": outlook.get("n"), "outlook_cross": outlook.get("cross"),
     }

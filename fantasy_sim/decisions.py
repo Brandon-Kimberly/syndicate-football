@@ -895,14 +895,23 @@ def _env_norm(engine):
     return cached
 
 
-def week_expectation(engine, name, week):
+def week_expectation_parts(engine, name, week):
+    """(baseline mean, environment ratio, game-script multiplier) whose product is
+    week_expectation. Kept apart so the prediction record can show WHICH factor moved a team's
+    expected total (2026-10-11: the owner's quoted totals ran ~20 above what they scored, and the
+    record held only the total). An unavailable player is (mean, 0.0, 0.0)."""
     e = _entry(engine, name)
+    mean = float(e.get('mean', 0.0))
     if e.get('bye') == week or _unavailable_now(e):
-        return 0.0
+        return mean, 0.0, 0.0
     pos = normalize_position(e.get('pos', 'FLEX'))
     veg = engine._compute_week_environment(week, e.get('team', 'FA'))
-    ratio = veg['total'] / _env_norm(engine)
-    return float(e.get('mean', 0.0)) * ratio * engine._script_multiplier(pos, veg)
+    return mean, veg['total'] / _env_norm(engine), engine._script_multiplier(pos, veg)
+
+
+def week_expectation(engine, name, week):
+    mean, ratio, script = week_expectation_parts(engine, name, week)
+    return mean * ratio * script
 
 
 def _slot_positions(slot):
@@ -1873,7 +1882,10 @@ def league_week_outlook(engine, week, sims=5000, seed=None, cross=True):
             "sd_total": float(totals[t].std()),
             "lineup": [{"slot": s_, "name": nm, "expected": exp[nm], "sd": sd[nm],
                         "flag": injury_flag(_entry(engine, nm)),   # B4: display only
-                        "nfl_team": _entry(engine, nm).get('team', 'FA')} for nm, s_ in sorted(lineups[t], key=lambda x: x[1])],
+                        "nfl_team": _entry(engine, nm).get('team', 'FA'),
+                        **dict(zip(("baseline_mean", "env_ratio", "script"),
+                                   week_expectation_parts(engine, nm, week)))}
+                       for nm, s_ in sorted(lineups[t], key=lambda x: x[1])],
         }
     return {"week": week, "n": sims, "cross": cross, "matchups": matchups, "teams": team_rows,
             # C2: {team: [{"slot", "mean"}]} for rosters that could not fill a slot and are
