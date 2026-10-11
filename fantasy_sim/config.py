@@ -900,6 +900,13 @@ SIM_CONFIG = {
     #   cancelling -- the moment he signs, Sleeper projects him, sync writes a real baseline
     #   and the engine stops imputing (the whitelist applies only to a missing or zero mean).
     #   If he is still unsigned and this reads as a real projection to you, it is not one.
+    #   Emmett Johnson: RB, KC (Sleeper pid 13337), rookie out of Nebraska, Active, depth RB2,
+    #   rostered by one manager with NO Sleeper projection for week 5 (issue #37: this aborted
+    #   the engine and blocked the week-5 Sunday canonical window). Zeros are Sleeper's own
+    #   answer -- it prices him at nothing -- not an estimate of ours: UNVERIFIED as a statement
+    #   about his role, SOURCED as a statement about Sleeper's projection. Team KC and bye 5 are
+    #   Sleeper's (a mismatched team is rejected). Self-cancelling: the whitelist applies only to
+    #   a missing or zero mean, so the first week Sleeper projects him the real baseline wins.
     #   Tank Dell: WR, HOU (Sleeper pid 9502), status Inactive, on IR after ACL + MCL surgery.
     #   Added 2026-10-01 (issue #23) when the sync found him rostered with a zero projection and
     #   no prior anywhere. Zeros for the same reason as Hill's: a player on IR cannot be in a
@@ -912,5 +919,6 @@ SIM_CONFIG = {
         "Jordyn Tyson": {"mean": 6.5, "std_aleatoric": 3.0, "std_epistemic": 1.17, "pos": "WR", "team": "NO", "bye": 0},
         "Tyreek Hill": {"mean": 0.0, "std_aleatoric": 0.0, "std_epistemic": 0.0, "pos": "WR", "team": "FA", "bye": 0},
         "Tank Dell": {"mean": 0.0, "std_aleatoric": 0.0, "std_epistemic": 0.0, "pos": "WR", "team": "HOU", "bye": 8},
+        "Emmett Johnson": {"mean": 0.0, "std_aleatoric": 0.0, "std_epistemic": 0.0, "pos": "RB", "team": "KC", "bye": 5},
     }
 }
