@@ -186,5 +186,55 @@ class TestIngestionFallbacksDoNotReadRealData(unittest.TestCase):
                           f"{name} reads the real vegas file unless it patches sync.VEGAS_FILE")
 
 
+# ---------------------------------------------------------------------------- 4. the push race
+class TestTheLogsPushSurvivesARace(unittest.TestCase):
+    """2026-10-11, the week-5 Sunday window: the canonical report wrote its row at 16:46:42Z,
+    git push was rejected (another job had pushed first -- the scheduled captures run all day),
+    commit_and_push_logs gave up with 'committed locally', and the runner's copy was discarded:
+    the window's only canonical row survived solely in the run's site-data artifact. The
+    workflow's own early capture step already does pull --rebase and retries; this helper did not."""
+
+    REJECTED = "! [rejected]        main -> main (fetch first)" + chr(10) + "hint: Updates were rejected"
+
+    def run_logs_push(self, pushes, pull_rc=0):
+        from fantasy_sim.weekly_report import commit_and_push_logs
+        calls, left = [], list(pushes)
+
+        def git(args):
+            calls.append(list(args))
+            if args[0] == "diff":
+                return 1, ""
+            if args[0] == "push":
+                return (0, "") if (left.pop(0) if left else False) else (1, self.REJECTED)
+            if args[0] == "pull":
+                return pull_rc, "" if pull_rc == 0 else "CONFLICT"
+            return 0, ""
+        return commit_and_push_logs(5, git=git), calls
+
+    def test_a_rejected_push_is_rebased_and_retried(self):
+        out, calls = self.run_logs_push([False, True])
+        self.assertTrue(out["pushed"], out)
+        self.assertEqual([c[0] for c in calls if c[0] in ("push", "pull")], ["push", "pull", "push"])
+        pull = next(c for c in calls if c[0] == "pull")
+        self.assertIn("--rebase", pull)
+        self.assertIn("--autostash", pull, "a user's unrelated dirty files must survive the rebase")
+
+    def test_a_pull_that_fails_is_aborted_and_the_row_is_still_reported_as_unpushed(self):
+        out, calls = self.run_logs_push([False], pull_rc=1)
+        self.assertFalse(out["pushed"])
+        self.assertIn(["rebase", "--abort"], calls, "never leave the checkout mid-rebase")
+        self.assertIn("committed locally", out["warning"])
+
+    def test_it_gives_up_after_a_few_attempts(self):
+        out, calls = self.run_logs_push([False] * 20)
+        self.assertFalse(out["pushed"])
+        self.assertLessEqual(sum(1 for c in calls if c[0] == "push"), 4)
+
+    def test_the_workflow_that_runs_it_keeps_the_rows_as_an_artifact(self):
+        with open(os.path.join(REPO, ".github", "workflows", "canonical-run.yml"), encoding="utf-8") as fh:
+            wf = fh.read()
+        self.assertIn("data/logs/**", wf, "the artifact the lost row was recovered from")
+
+
 if __name__ == "__main__":
     unittest.main()
