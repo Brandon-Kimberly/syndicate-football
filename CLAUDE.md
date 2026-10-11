@@ -103,6 +103,17 @@ the library, or rendering starts fetching live data mid-test);
 sync and the backtests refuse loudly, naming the variable, when one is missing. On the
 runner they are repo Actions secrets of the same names.
 
+**Unprojected rostered players (2026-10-11, issues #23 and #37).** A rostered player Sleeper
+projects at nothing, with no prior, used to abort the engine and block the canonical gate until a
+human hand-typed a `KNOWN_MISSING_ASSETS` entry -- which cost week 4's pre-kickoff window. Now up
+to `SIM_CONFIG['AUTO_ZERO_IMPUTE_MAX']` (3) such players are valued at Sleeper's own zero, with
+team/position/bye/availability from the roster (`engine.auto_imputed`, an `AUTO-ZERO` warning the
+gate treats as benign); more than that still aborts, as a wholesale projection failure should; a
+hand-typed entry still wins and is how to express any non-zero judgment; the entry's `team` must
+equal the roster's or the gate blocks; a cap of 0 restores the old abort. A canonical run's row
+now survives a push race (`commit_and_push_logs` rebases and retries); if a run ever reports
+"LOGS PUSH ... committed locally", the row is in that run's `site-data` artifact.
+
 ## Rules of engagement
 
 These are non-negotiable and exist because each was learned the hard way on this codebase.

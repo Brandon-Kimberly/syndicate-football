@@ -229,7 +229,21 @@ def commit_and_push_logs(week, git=_run_git):
             rc, out = git(["rev-list", "--count", "@{u}..HEAD", "--", "data/logs"])
             if rc == 0 and (out or "").strip() == "0":
                 return result   # nothing new locally and nothing unpushed
+        # A rejected push is usually a RACE, not a failure: the scheduled captures push to main all
+        # day, and a canonical run's row can land between their fetch and ours. 2026-10-11 (the
+        # week-5 Sunday window): the single push was rejected, this gave up, and the runner's copy
+        # -- the window's only canonical row -- was discarded with the runner. So: rebase onto
+        # whatever landed (the logs merge union, .gitattributes) and push again, a few times.
         rc, out = git(["push"])
+        for _attempt in range(3):
+            if rc == 0:
+                break
+            prc, pout = git(["pull", "--rebase", "--autostash"])
+            if prc != 0:
+                git(["rebase", "--abort"])          # never leave the checkout mid-rebase
+                out = f"{out.strip()} | pull --rebase failed: {pout.strip()}"
+                break
+            rc, out = git(["push"])
         if rc != 0:
             result["warning"] = f"git push failed (committed locally): {out.strip()}"
             logging.warning("LOGS PUSH: %s", result["warning"])
