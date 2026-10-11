@@ -915,6 +915,20 @@ SIM_CONFIG = {
     #   said 'FA', was not accepted, and the week-4 pre-kickoff window was lost to it).
     #   Self-cancelling: Sleeper's week-5 projection already gives him 1.16 points, and the
     #   whitelist applies only to a missing or zero mean.
+    # AUTO_ZERO_IMPUTE_MAX (2026-10-11, owner: stop losing windows to this). The engine used to
+    # abort the whole run whenever ANY rostered player had no Sleeper projection and no entry
+    # below -- which cost week 4's pre-kickoff window (issue #23: Tank Dell, whose hand-typed
+    # entry then carried the wrong team) and put week 5's Sunday window at risk (#37: Emmett
+    # Johnson). The abort exists for a WHOLESALE projection failure (a dead endpoint zeroes dozens
+    # of players), not for one stashed rookie. So up to this many such players, TOGETHER, are
+    # valued at Sleeper's own number -- zero, no spread -- with team, position, bye and
+    # availability from Sleeper's roster record, recorded on engine.auto_imputed and warned loudly
+    # as AUTO-ZERO (benign to the canonical gate: it is visible, and cannot move a draw it did
+    # not already zero). More than this still aborts. A hand-typed entry below always wins (it is
+    # how a non-zero judgment like Tyson's 6.5 is expressed). 0 restores the old abort exactly.
+    # UNVERIFIED, judgment: 3 against the observed 4 cases in 5 weeks, never more than one at a
+    # time; a real projection failure is an order of magnitude past 3.
+    "AUTO_ZERO_IMPUTE_MAX": 3,
     "KNOWN_MISSING_ASSETS": {
         "Jordyn Tyson": {"mean": 6.5, "std_aleatoric": 3.0, "std_epistemic": 1.17, "pos": "WR", "team": "NO", "bye": 0},
         "Tyreek Hill": {"mean": 0.0, "std_aleatoric": 0.0, "std_epistemic": 0.0, "pos": "WR", "team": "FA", "bye": 0},

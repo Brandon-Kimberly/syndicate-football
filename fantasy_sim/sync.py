@@ -492,6 +492,14 @@ def fetch_vegas_implied_totals(current_nfl_week, sharp_polling=False, week_sched
         if action == "reuse":
             logging.info("VEGAS (week %d): no odds fetch, no credits spent -- %s.", current_nfl_week, why)
             record_source("vegas_odds", ok=True, rows=sum(1 for k in on_disk if k != VEGAS_META_KEY))
+            # Written back IN PLACE (2026-10-11): the freshness check reads a sync output older than
+            # the sync as "never rewritten", so a reuse that touched nothing made every completed
+            # sync read STALE. `fetched_at` stays when the lines were BOUGHT -- the reuse window
+            # must still run out; `reused_at` says this sync looked at them and kept them.
+            on_disk = dict(on_disk)
+            on_disk[VEGAS_META_KEY] = dict(on_disk.get(VEGAS_META_KEY) or {},
+                                           reused_at=datetime.now().isoformat(timespec="seconds"))
+            save_json(VEGAS_FILE, on_disk)
             generate_nfl_power_ratings(on_disk)
             return on_disk
         if action == "hold":
@@ -1028,6 +1036,7 @@ def generate_player_baselines(league_scoring_settings, players_db, live_rosters,
     unconstrained_positions = {}
     rostered_names = {p.get("name") for team in (live_rosters or {}).values() for p in team}
     projection_rows = []          # F7: what this sync projected for each rostered player
+    uncovered = []                # rostered, zero projection, no prior, on no whitelist (AUTO-ZERO or blocking)
     synced_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     for pid, proj_data in projections.items():
         player = players_db.get(str(pid))
@@ -1111,7 +1120,13 @@ def generate_player_baselines(league_scoring_settings, players_db, live_rosters,
                         "BASELINES: rostered player %r (%s, %s) has a zero/empty Sleeper "
                         "projection; covered by KNOWN_MISSING_ASSETS -- the engine imputes "
                         "the whitelisted baseline.", name, raw_pos, team)
+                elif wl is None:
+                    # on no whitelist at all: AUTO-ZERO or blocking, decided below once the whole
+                    # set is known (the engine applies the same cap to the same set)
+                    uncovered.append((name, raw_pos, team))
                 else:
+                    # a hand-typed entry that carries the WRONG team (issue #23: Tank Dell 'FA' for
+                    # HOU) is a human error to fix, never silently covered
                     logging.warning(
                         "BASELINES: rostered player %r (%s, %s) has a zero/empty Sleeper projection "
                         "and is NOT in baselines. The engine will abort on him unless "
@@ -1216,6 +1231,22 @@ def generate_player_baselines(league_scoring_settings, players_db, live_rosters,
             "injury_status": player.get("injury_status"),
             "on_ir": str(pid) in (reserve_pids or ()),
         }
+
+    _cap = int(SIM_CONFIG.get("AUTO_ZERO_IMPUTE_MAX", 0))
+    for name, raw_pos, team in uncovered:
+        if len(uncovered) <= _cap:
+            logging.warning(
+                "BASELINES: rostered player %r (%s, %s) has a zero/empty Sleeper projection and no "
+                "prior; AUTO-ZERO -- the engine values him at zero (Sleeper's own number) from the "
+                "roster's team, position and availability. Add a KNOWN_MISSING_ASSETS entry only to "
+                "say something other than zero.", name, raw_pos, team)
+        else:
+            logging.warning(
+                "BASELINES: rostered player %r (%s, %s) has a zero/empty Sleeper projection "
+                "and is NOT in baselines. The engine will abort on him unless "
+                "SIM_CONFIG['KNOWN_MISSING_ASSETS'] carries an entry (team must match: %s). "
+                "(%d such players exceeds AUTO_ZERO_IMPUTE_MAX = %d: a wholesale projection failure?)",
+                name, raw_pos, team, team, len(uncovered), _cap)
 
     if unconstrained_positions:
         # Team DEF entities (32) and the odd unmapped position land here every sync; one line,

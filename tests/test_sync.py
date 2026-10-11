@@ -596,7 +596,15 @@ class TestMissingProjectionIsAnAbsence(unittest.TestCase):
         self.assertIn("carried", log.lower())
 
     def test_zero_projection_without_a_prior_is_still_dropped_with_the_warning(self):
+        """Still not in baselines (the engine values him), and still loud. Within
+        AUTO_ZERO_IMPUTE_MAX (2026-10-11) the warning says AUTO-ZERO -- the engine values him at
+        Sleeper's zero; with the cap at 0, the old policy, it says he is NOT in baselines."""
         with patch('fantasy_sim.sync._last_logged_projections', return_value={}):
+            result, log = self._run(existing={}, reserve_pids=(), injury_status="NA")
+        self.assertNotIn("Test Player", result)
+        self.assertIn("AUTO-ZERO", log)
+        self.assertNotIn("NOT in baselines", log)
+        with patch('fantasy_sim.sync._last_logged_projections', return_value={}),                 patch.dict('fantasy_sim.sync.SIM_CONFIG', {"AUTO_ZERO_IMPUTE_MAX": 0}):
             result, log = self._run(existing={}, reserve_pids=(), injury_status="NA")
         self.assertNotIn("Test Player", result)
         self.assertIn("NOT in baselines", log)

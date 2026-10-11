@@ -339,8 +339,12 @@ class TestMissingBaselineWarningTellsTheTruth(_BaselineFixtures, unittest.TestCa
         return _resp({}, status=404)
 
     def test_uncovered_player_still_warns_engine_will_abort(self):
-        with self.assertLogs(level="WARNING") as logs:
-            self._gen(self._zero_proj_get)
+        """With AUTO_ZERO_IMPUTE_MAX = 0 -- the old policy, restored exactly (2026-10-11: by default
+        up to three such players are valued at Sleeper's zero instead; tests.test_sync_regressions_1011
+        pins that, and the cap's own failsafe). The wording below is what the gate blocks on."""
+        with patch.dict(sync.SIM_CONFIG, {"AUTO_ZERO_IMPUTE_MAX": 0}):
+            with self.assertLogs(level="WARNING") as logs:
+                self._gen(self._zero_proj_get)
         self.assertTrue(any("is NOT in baselines" in m and "will abort" in m
                             for m in logs.output))
 

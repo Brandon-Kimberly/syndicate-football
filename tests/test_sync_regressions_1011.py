@@ -155,7 +155,7 @@ class TestTheSyncAndTheGateAgree(unittest.TestCase):
 
     def classify(self, logged):
         """The gate reads the manifest's entries: 'WARNING | <message>'."""
-        from scripts.canonical_gate import classify
+        from scripts.canonical_gate import classify_degraded_entry as classify
         return classify("WARNING | " + logged.split("WARNING:root:", 1)[1])
 
     def test_within_the_cap_the_sync_says_auto_zero_and_the_gate_calls_it_benign(self):
@@ -182,7 +182,7 @@ class TestIngestionFallbacksDoNotReadRealData(unittest.TestCase):
                      "test_in_season_api_failure_writes_the_fallback_it_returns"):
             body = src[src.index(f"def {name}"):]
             body = body[:body.index("    def ", 10)]
-            self.assertIn('patch.object(sync, "VEGAS_FILE"', body,
+            self.assertIn("_no_real_vegas()", body,
                           f"{name} reads the real vegas file unless it patches sync.VEGAS_FILE")
 
 

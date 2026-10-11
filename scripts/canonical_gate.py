@@ -36,6 +36,7 @@ BENIGN_MARKERS = (
     "use the anonymous defaults",
     "DEPTH WATCHDOG:",
     "covered by KNOWN_MISSING_ASSETS",   # whitelisted zero-projection: engine imputes cleanly
+    "AUTO-ZERO",                         # within AUTO_ZERO_IMPUTE_MAX: valued at Sleeper's own zero, loud, bounded (2026-10-11)
     # A team with no market line takes the flat 21.5 / no-opponent fallback. This fires
     # BY DESIGN at every Sunday and Tuesday quote (a completed game has no live line) and
     # on every bye week -- classified 2026-09-10, the night it first appeared, when it
@@ -169,6 +170,12 @@ K/IDP epistemic signal. Repeated skips degrade F22's eventual derivation.""",
 **What happened:** someone rosters a player Sleeper projects at zero who has no prior
 anywhere. The engine refuses to invent a number (house rule: every constant is sourced
 or marked unverified). **This is a judgment call only you can make.**
+
+**Since 2026-10-11 this block is rarer:** up to `SIM_CONFIG['AUTO_ZERO_IMPUTE_MAX']` such
+players are valued at Sleeper's own zero automatically (an `AUTO-ZERO` warning, benign to
+this gate), so you land here only when MORE than that many are unprojected at once -- read
+it as a possible wholesale projection failure and check Sleeper's projections first -- or
+when a hand-typed entry carries the wrong `team` (the warning names the team it must be).
 
 **Run this:** add an entry to `KNOWN_MISSING_ASSETS` inside `SIM_CONFIG` in
 `fantasy_sim/config.py`, shaped exactly like the existing one -- field for field:

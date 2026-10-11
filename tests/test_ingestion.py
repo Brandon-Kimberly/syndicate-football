@@ -25,6 +25,7 @@ WHAT IS NOT COVERED
 """
 import logging
 import os
+import tempfile
 import unittest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
@@ -117,6 +118,13 @@ class TestVegasFallbacks(unittest.TestCase):
         self.assertEqual(written["_meta"]["week"], 1)
         self.assertEqual(written["_meta"]["source"], "week1_verified_table")
 
+    def _no_real_vegas(self):
+        """sync.VEGAS_FILE pointed at a directory with nothing in it. The C3 keep-real-lines rule
+        reads that file, and the real data/current/vegas_totals.json is week 5 whenever the live
+        sync is -- which silently turned these week-5 tests into 'real lines kept' (2026-10-11).
+        The basename stays vegas_totals.json: _capture_saves keys on it."""
+        return patch.object(sync, "VEGAS_FILE", os.path.join(tempfile.mkdtemp(), os.path.basename(VEGAS_FILE)))
+
     def test_in_season_without_api_key_writes_the_fallback_it_returns(self):
         """Regression guard for Phase 3 finding 1. This path used to return
         DEFAULT_FALLBACK_TOTALS and rewrite the power ratings from it, but never write
@@ -126,6 +134,7 @@ class TestVegasFallbacks(unittest.TestCase):
         for and where it came from."""
         saved, fake_save = _capture_saves()
         with patch.object(sync, "save_json", side_effect=fake_save), \
+             self._no_real_vegas(), \
              patch.object(sync, "datetime", _InSeason), \
              patch.object(sync, "ODDS_API_KEY", ""), \
              self.assertLogs(level="WARNING"):
@@ -142,6 +151,7 @@ class TestVegasFallbacks(unittest.TestCase):
         """Regression guard for Phase 3 finding 1, API-error path."""
         saved, fake_save = _capture_saves()
         with patch.object(sync, "save_json", side_effect=fake_save), \
+             self._no_real_vegas(), \
              patch.object(sync, "datetime", _InSeason), \
              patch.object(sync, "ODDS_API_KEY", "key"), \
              patch.object(sync.requests, "get", side_effect=Exception("down")), \

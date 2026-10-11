@@ -323,6 +323,7 @@ class FantasySimulationEngine:
         raw_by_team = {t: {p['name']: p for p in data} for t, data in self.rosters_raw.items()}
 
         missing_players = []
+        self.auto_imputed = []        # names valued at zero below (AUTO_ZERO_IMPUTE_MAX); [] when none
         for t, p_dict in self.meta.items():
             for p_name, meta in p_dict.items():
                 if p_name not in self.baselines or self.baselines[p_name].get('mean', 0.0) <= 0:
@@ -385,10 +386,35 @@ class FantasySimulationEngine:
                     else:
                         missing_players.append((t, p_name, meta['pos']))
 
+        # AUTO_ZERO_IMPUTE_MAX: a handful of unprojected, unlisted players are valued at Sleeper's
+        # own zero rather than losing the run (config.py has the why). More than the cap is a
+        # wholesale projection failure, and that still aborts.
+        cap = int(SIM_CONFIG.get("AUTO_ZERO_IMPUTE_MAX", 0))
+        if missing_players and len(missing_players) <= cap:
+            byes = self.nfl_schedule.get('_meta', {}).get('byes', {}) if isinstance(self.nfl_schedule, dict) else {}
+            for t, p_name, _pos in missing_players:
+                meta = self.meta[t][p_name]
+                _raw = raw_by_team.get(t, {}).get(p_name, {})
+                self.baselines[p_name] = {
+                    'mean': 0.0, 'std_aleatoric': 0.0, 'std_epistemic': 0.0,
+                    'pos': meta.get('pos', 'FLEX'), 'team': meta.get('team') or 'FA',
+                    'bye': byes.get(meta.get('team') or 'FA', 0),
+                    'on_ir': bool(_raw.get('on_ir', False)), 'injury_status': _raw.get('injury_status'),
+                    'auto_imputed': 'zero',
+                }
+                self.auto_imputed.append(p_name)
+                logging.warning(
+                    "AUTO-ZERO: rostered player %r (%s, %s) has no Sleeper projection and no "
+                    "KNOWN_MISSING_ASSETS entry; valued at zero (Sleeper's own number), team/pos/bye/"
+                    "availability from the roster. Add an entry to say otherwise.",
+                    p_name, meta.get('pos'), meta.get('team') or 'FA')
+            missing_players = []
         if missing_players:
             raise ValueError(
                 f"CRITICAL ABORT: {len(missing_players)} rostered players lack projections. First 3: {missing_players[:3]}.\n"
-                f"Add these to SIM_CONFIG['KNOWN_MISSING_ASSETS'] to explicitly bypass this failsafe."
+                f"Add these to SIM_CONFIG['KNOWN_MISSING_ASSETS'] to explicitly bypass this failsafe. "
+                f"(More than SIM_CONFIG['AUTO_ZERO_IMPUTE_MAX'] = {cap} unprojected players is treated as a "
+                f"wholesale projection failure, not valued at zero.)"
             )
         print(f"[PRE-FLIGHT SUCCESS] {len(self.baselines)} Projections Validated.")
 
