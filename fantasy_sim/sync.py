@@ -709,17 +709,20 @@ def fetch_vegas_implied_totals(current_nfl_week, sharp_polling=False, week_sched
     # out (a game already under way or finished is dropped from the feed) are filled from it, and
     # the repair is NAMED in `_meta`; lines that disagree beyond LINES_CROSSCHECK_PTS are REPORTED.
     # It never overrides a line the Odds API supplied.
-    patched, differ = [], {}
+    patched, differ, repairable = [], {}, []
     _nv_rows = _nflverse_rows(current_nfl_week) if (budget is not None and week_schedule) else None
     if _nv_rows:
+        from fantasy_sim import config as _cfg
         from fantasy_sim.config import LINES_CROSSCHECK_PTS
         _nv = _nflverse.implied_totals(_nv_rows, week_schedule)
         _home_of = {r["away"]: r["home"] for r in _nv_rows}
         for team, entry in _nv.items():
             if team not in implied_totals:
-                _wx = {k: v for k, v in _game_weather(_home_of.get(team, team)).items() if k != "hours_used"}
-                implied_totals[team] = dict(entry, **_wx)
-                patched.append(team)
+                repairable.append(team)
+                if _cfg.NFLVERSE_REPAIR_ENABLED:
+                    _wx = {k: v for k, v in _game_weather(_home_of.get(team, team)).items() if k != "hours_used"}
+                    implied_totals[team] = dict(entry, **_wx)
+                    patched.append(team)
             else:
                 gap = implied_totals[team]["total"] - entry["total"]
                 if abs(gap) > LINES_CROSSCHECK_PTS:
@@ -763,6 +766,8 @@ def fetch_vegas_implied_totals(current_nfl_week, sharp_polling=False, week_sched
     extra = None
     if _nv_rows:
         extra = {"crosscheck": {"source": "nflverse", "differ": differ}}
+        if repairable:
+            extra["repairable_from_nflverse"] = sorted(repairable)
         if patched:
             extra["patched_from_nflverse"] = sorted(patched)
     return _write_vegas(implied_totals, current_nfl_week, "odds_api", extra)

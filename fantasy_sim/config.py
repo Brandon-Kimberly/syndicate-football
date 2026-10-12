@@ -95,6 +95,13 @@ ODDS_API_KEY = os.getenv("ODDS_API_KEY", "").strip()
 # Odds payload had left out) differed by 8-9. 3.0 sits above a real move and below a wrong game.
 # UNVERIFIED beyond that single week; it only decides whether a line is REPORTED, never which one is used.
 LINES_CROSSCHECK_PTS = 3.0
+# NFLVERSE_REPAIR_ENABLED (2026-10-12): fill the teams the Odds payload omitted (a game already under
+# way or finished drops out of the feed) from nflverse's published lines. OFF, deliberately: replaying
+# the week-5 file with and without the 28 omitted teams moved a matchup's P(win) by up to 5.9 points
+# (4 matchups: -1.7, +3.4, +5.9, -0.9) -- an engine INPUT change the goldens cannot see, hence
+# MAJOR-class under the release policy. Turn on only inside the bundled MAJOR with release notes.
+# With it off the omitted teams are still NAMED in vegas_totals _meta.repairable_from_nflverse.
+NFLVERSE_REPAIR_ENABLED = False
 ODDS_FETCH_COST = 2
 # Held back for the official runs; nothing else may spend below it. Measured basis:
 # canonical-run fired 13 times in September 2026, quiet skips included, so at most ~13
