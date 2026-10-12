@@ -147,6 +147,25 @@ on in this release and the number belongs in the release notes.
   miss; the cause was that Questionable was priced as healthy, which item 1 fixes -- for him
   P(plays | Questionable QB) is 0.59 and 0.29 if he does not practice.
 
+## Gates run before merge (and what they cannot see)
+
+| gate | result |
+|---|---|
+| full suite | 2428 tests, all passing once the goldens were regenerated (they were red by design in the code commit) |
+| golden masters | regenerated in their own commit; week01 league scoring -3.67%, week06 -0.36%, week15 unchanged |
+| behaviour check, both scenarios (M2) | every mechanic in the same plausibility band as before; drift on FAAB / lineup metrics is the F62 noise class; baselines regenerated, double-run identical |
+| points backtest vs real 2025 (300 sims x 4 checkpoints) | bias -2.50 pts (was -2.79; change +0.29, limit 0.5), mean z +0.091 (was +0.110; change 0.018, limit 0.05), cover80 0.76 / cover50 0.46 (0.75 / 0.46), engine MAE 22.21 (22.38) |
+| golden attribution (`analysis/golden_attribution.py`) | only the environment neutralisation is a material scoring effect (-3.6 points per team-week where lines apply); the rest are inside the +/-1 point run-to-run noise |
+
+**What these gates cannot see.** The 2025 backtest league has no Vegas payload and rosters no IDP, so it barely
+exercises the environment neutralisation, the game-status draw or the LB/DB hazards; it shows the
+change did not damage the calibration it WAS measuring. The evidence for the big changes is the
+measurements above and the live record: on 2026 weeks 1-4 the old engine's quoted team totals ran
++5.7 points per team-week above realised, and the neutralisation moves the week01 scenario by about
+-5.5 points. That agreement in direction and size is consistent, not an out-of-sample validation:
+the first real test is the next weeks' prediction records, which now carry each player's baseline,
+ratio, script and availability.
+
 ## What would change these
 
 * Item 6 is the soft one. Re-run `scripts.env_check` each week; if the interval stops containing 0.71,
