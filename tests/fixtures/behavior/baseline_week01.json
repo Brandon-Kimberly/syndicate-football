@@ -1,14 +1,14 @@
 {
-  "bid_mean": 5.895,
-  "bid_median": 3.034,
-  "bid_p95": 21.13,
-  "early_claim_share": 0.2409,
-  "faab_spent": 641.14,
-  "lineup_changes_mean": 2.169,
-  "lineup_zero_share": 0.0844,
+  "bid_mean": 5.701,
+  "bid_median": 3.058,
+  "bid_p95": 20.29,
+  "early_claim_share": 0.2415,
+  "faab_spent": 645.93,
+  "lineup_changes_mean": 2.219,
+  "lineup_zero_share": 0.0719,
   "n_sims": 30,
   "scenario": "week01",
-  "trade_completions": 0.0,
-  "trade_offer_events": 5.5,
-  "waiver_claims": 108.77
+  "trade_completions": 0.133,
+  "trade_offer_events": 5.33,
+  "waiver_claims": 113.3
 }
