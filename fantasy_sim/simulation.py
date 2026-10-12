@@ -1189,6 +1189,9 @@ class FantasySimulationEngine:
                 "the stale line. Re-run the sync with ODDS_API_KEY set for real week-%d lines. "
                 "Teams: %s", len(stale), sum(1 for t in self.vegas if t not in ('FA', '_meta')),
                 self.current_week, stamped_week, self.current_week, ", ".join(sorted(stale)))
+        elif meta and meta.get('source') == 'fallback_nflverse_lines':
+            logging.info("VEGAS: this week's lines are nflverse's published lines (the Odds API was "
+                         "unavailable at sync): real totals and opponents, no weather.")
         elif meta and meta.get('source', '').startswith('fallback'):
             logging.warning(
                 "VEGAS: this week's file is a sync fallback (%s): flat 21.5 totals, no opponents. "

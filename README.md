@@ -3,7 +3,7 @@
 [![ci](https://github.com/Brandon-Kimberly/syndicate-football/actions/workflows/ci.yml/badge.svg)](https://github.com/Brandon-Kimberly/syndicate-football/actions/workflows/ci.yml)
 ![python](https://img.shields.io/badge/python-3.10-blue)
 [![license](https://img.shields.io/github/license/Brandon-Kimberly/syndicate-football)](LICENSE)
-![tests](https://img.shields.io/badge/tests-2346%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-2384%20passing-brightgreen)
 [![coverage](https://img.shields.io/badge/coverage-85.6%25-green)](#validation-and-audit-trail)
 
 ## In plain terms
@@ -182,6 +182,7 @@ py -3.10 -m scripts.check_test_isolation        # does the suite modify data/cur
 py -3.10 -m scripts.scan_real_names             # H1: tokenising real-identity scan of every tracked file before a push (LOCAL ONLY; refuses on a runner, writes nothing)
 py -3.10 -m scripts.webui_audit --out DIR       # crawl + screenshot the web UI in both views against a --no-real-names sandbox server (docs/WEB_UI_AUDIT.md)
 py -3.10 -m scripts.matchup_watch               # T5: what to watch this week -- both lineups by NFL game with the line and forecast, stacks, designations on BOTH rosters, shared games, their losing script
+py -3.10 -m scripts.availability_watch      # who the engine may be mis-pricing: carried baselines for unprojected players, plus the any-given-stat injury report vs Sleeper (advisory; changes no number)
 py -3.10 -m scripts.season_movie              # the season as GIFs: wins and points banked, title/playoff odds over the canonical runs (real names under data/; --fictional for a shareable copy)
 py -3.10 -m scripts.streamer_study             # C5: is the engine's streamer worth what the free-agent pool is worth? measurement only -- changing BASE_STREAMER_MEANS is MAJOR (docs/audit/STREAMER_LEVELS.md)
 py -3.10 -m scripts.roster_calendar             # T6: bye exposure per remaining week (which slots stay fillable, who covers whose bye) + the roster crunch when an IR player returns
@@ -278,7 +279,7 @@ Two credentials are read from environment variables, never hardcoded:
 ## Testing
 
 ```bash
-py -3.10 -m unittest discover tests      # expected: Ran 2346 tests ... OK (skipped=1, expected failures=3)
+py -3.10 -m unittest discover tests      # expected: Ran 2384 tests ... OK (skipped=1, expected failures=3)
 py -3.10 -m coverage run -m unittest discover tests && py -3.10 -m coverage report --show-missing
                                          # branch coverage; the committed floor (coverage_floor.txt) gates the
                                          # fantasy_sim package. Standalone milestone scripts are measured but

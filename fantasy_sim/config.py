@@ -88,6 +88,13 @@ ODDS_API_KEY = os.getenv("ODDS_API_KEY", "").strip()
 # /odds call; the sync asks for 2 markets (spreads, totals) in 1 region (us). Unverified by
 # measurement here -- the account was at zero when this was written -- and the fetch logs
 # x-requests-last, which confirms it on the next paid call.
+# LINES_CROSSCHECK_PTS (2026-10-12): when the Odds API lines and nflverse's published lines
+# disagree about a team's IMPLIED TOTAL by more than this many points, sync records and warns about
+# it. Measured on the week-5 file the day it was added: 13 of 15 games agreed within 0.75 points,
+# the one real line move (JAX) differed by 2.5 on each side, and the broken pair (DAL, TB, which the
+# Odds payload had left out) differed by 8-9. 3.0 sits above a real move and below a wrong game.
+# UNVERIFIED beyond that single week; it only decides whether a line is REPORTED, never which one is used.
+LINES_CROSSCHECK_PTS = 3.0
 ODDS_FETCH_COST = 2
 # Held back for the official runs; nothing else may spend below it. Measured basis:
 # canonical-run fired 13 times in September 2026, quiet skips included, so at most ~13

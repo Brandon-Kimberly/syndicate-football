@@ -33,8 +33,11 @@ from fantasy_sim.storage import (
     SYNC_PROVENANCE_FILE, git_head_short, FIRST_SCORES_FILE, DESIGNATIONS_FILE, FAAB_ADJUSTMENTS_FILE,
     SYNC_MANIFEST_FILE, SYNC_OUTPUT_FILES, PLAYER_CACHE_FILE, DECISION_LOG_FILE,
     PENDING_TRADES_FILE, draft_log_file, season_log_file, NFL_TEAM_COLORS_FILE, WEEKLY_LINEUPS_FILE, FAILED_CLAIMS_FILE,
-    BANKED_SCORES_FILE, SCORING_SETTINGS_FILE, IDP_PROJECTIONS_FILE,
+    BANKED_SCORES_FILE, SCORING_SETTINGS_FILE, IDP_PROJECTIONS_FILE, AVAILABILITY_WATCH_FILE,
 )
+from fantasy_sim import availability_watch as _availability_watch
+from fantasy_sim.clients import ags as _ags
+from fantasy_sim.clients import nflverse as _nflverse
 from fantasy_sim.clients.sleeper import update_player_cache
 from fantasy_sim.clients.espn import fetch_espn_projection_data, normalize_player_name_for_matching as _normalize_player_name_for_matching
 from fantasy_sim.clients.espn import fetch_espn_projections  # noqa: F401 -- deliberate re-export: tests import this from fantasy_sim.sync
@@ -232,7 +235,7 @@ def generate_nfl_power_ratings(live_totals):
 VEGAS_META_KEY = "_meta"
 
 
-def _stamp_vegas(totals, week, source):
+def _stamp_vegas(totals, week, source, extra=None):
     """Returns a copy of a Vegas totals dict carrying a `_meta` record: the NFL week the lines
     are FOR, where they came from, and when. The engine reads `_meta.week` to refuse lines
     that were not produced for the week it is simulating (see
@@ -244,6 +247,8 @@ def _stamp_vegas(totals, week, source):
         "source": source,
         "fetched_at": datetime.now().isoformat(timespec="seconds"),
     }
+    if extra:
+        stamped[VEGAS_META_KEY].update(extra)
     return stamped
 
 
@@ -416,7 +421,7 @@ def _keepable_real_lines(week):
         return None
 
 
-def _write_vegas(totals, week, source):
+def _write_vegas(totals, week, source, extra=None):
     """Every path out of fetch_vegas_implied_totals goes through here, so the file on disk is
     ALWAYS the data the engine will be handed for this week -- never a leftover from an earlier
     sync. Two of the three in-season fallback paths used to return without writing, which left
@@ -452,10 +457,98 @@ def _write_vegas(totals, week, source):
             generate_nfl_power_ratings(kept)
             return kept
 
-    stamped = _stamp_vegas(totals, week, source)
+    stamped = _stamp_vegas(totals, week, source, extra)
     save_json(VEGAS_FILE, stamped)
     generate_nfl_power_ratings(stamped)
     return stamped
+
+
+def run_availability_watch(live_rosters, baselines, week):
+    """Advisory, so it can never fail or degrade a sync: any error is swallowed, and everything it
+    says goes out at INFO (a WARNING would land in the manifest's `degraded` list and the canonical
+    gate would read it as a forecast problem). Findings are in AVAILABILITY_WATCH_FILE."""
+    try:
+        report = _ags.try_fetch_injury_report()
+        findings = _availability_watch.write_availability_watch(
+            AVAILABILITY_WATCH_FILE, live_rosters, baselines, week, ags_report=report,
+            now=datetime.now())
+        for f in findings:
+            logging.info("AVAILABILITY WATCH [%s] %s (%s, %s): %s", f["kind"], f["name"], f["pos"],
+                         f["team"], f["detail"])
+        logging.info("AVAILABILITY WATCH: %d finding(s); injury feed %s.", len(findings),
+                     "used" if report else "not used")
+        return findings
+    except Exception as ex:                                       # noqa: BLE001 -- advisory, never break a sync
+        logging.info("AVAILABILITY WATCH: skipped (%s: %s).", type(ex).__name__, ex)
+        return []
+
+
+def fetch_nflverse_week_lines(week):
+    """nflverse's published game lines for `week` of the season now in progress. The one network
+    seam for them (tests patch it); raises on any failure -- callers decide what a miss means."""
+    now = datetime.now()
+    season = now.year if now.month >= 3 else now.year - 1
+    return _nflverse.fetch_week_lines(season, week)
+
+
+def _nflverse_rows(week):
+    """`fetch_nflverse_week_lines`, or None on ANY failure: a second source must never be the
+    reason a sync fails."""
+    try:
+        return fetch_nflverse_week_lines(week) or None
+    except Exception as ex:
+        logging.info("NFLVERSE LINES (week %s): unavailable (%s: %s).", week, type(ex).__name__, ex)
+        return None
+
+
+def _game_weather(home_team):
+    """What a line taken from nflverse can honestly say about weather: a dome is calm, anything
+    else is UNKNOWN (nflverse carries no forecast) -- never a calm day by omission (B18)."""
+    return dome_weather() if home_team not in OUTDOOR_STADIUMS else unknown_weather()
+
+
+def _lines_from_nflverse(week, week_schedule):
+    """A complete vegas_totals dict for `week` from nflverse alone, or None when it has nothing
+    usable. Same shape as the Odds path: every club, FA, and the flat no-opponent entry for a
+    club with no game (a bye)."""
+    rows = _nflverse_rows(week)
+    if not rows:
+        return None
+    got = _nflverse.implied_totals(rows, week_schedule)
+    if not got:
+        return None
+    out = {"FA": dict({"total": 20.0, "spread": 0.0, "opponent": "FA"}, **unknown_weather("no_game"))}
+    home_of = {r["away"]: r["home"] for r in rows}
+    for team, entry in got.items():
+        wx = {k: v for k, v in _game_weather(home_of.get(team, team)).items() if k != "hours_used"}
+        out[team] = dict(entry, **wx)
+    for team in NFL_TEAM_ABBREVIATIONS.values():
+        if team not in out:
+            out[team] = dict({"total": 21.5, "spread": 0.0, "opponent": "FA"}, **unknown_weather("no_game"))
+    return out
+
+
+def _odds_unavailable(week, week_schedule, budget, source, why):
+    """Every way the Odds API cannot supply this week's lines ends here. With a budget (the real
+    sync always has one) nflverse's published lines are tried first -- real market lines, one book
+    elsewhere, no weather -- and only if they are also unavailable does the flat 21.5 table
+    (matchup-blind) get written, as it always did. Real Odds lines already on disk for this week
+    still win either way (C3: `_write_vegas`)."""
+    if budget is not None:
+        lines = _lines_from_nflverse(week, week_schedule)
+        if lines is not None:
+            n = sum(1 for t, v in lines.items() if t != "FA" and v.get("opponent") != "FA")
+            logging.warning(
+                "VEGAS (week %d): %s -- using nflverse's published lines instead (%d teams with a game; "
+                "no weather), not the flat 21.5 table.", week, why, n)
+            record_source("vegas_odds", ok=False, rows=n,
+                          fallback="nflverse published lines (the Odds API was unavailable)")
+            return _write_vegas(lines, week, "fallback_nflverse_lines")
+    logging.warning(
+        "VEGAS FALLBACK (week %d): %s. Every team gets a flat 21.5 total with no opponent for this run; "
+        "matchup and defensive-tier effects are OFF.", week, why)
+    record_source("vegas_odds", ok=False, rows=0, fallback="flat 21.5 totals, no opponents")
+    return _write_vegas(DEFAULT_FALLBACK_TOTALS, week, source)
 
 
 def fetch_vegas_implied_totals(current_nfl_week, sharp_polling=False, week_schedule=None, budget=None):
@@ -477,12 +570,8 @@ def fetch_vegas_implied_totals(current_nfl_week, sharp_polling=False, week_sched
         return _write_vegas(WEEK_1_VERIFIED_VEGAS, current_nfl_week, "week1_verified_table")
 
     if not ODDS_API_KEY:
-        logging.warning(
-            "VEGAS FALLBACK (week %d): ODDS_API_KEY is not set. Every team gets a flat 21.5 "
-            "total with no opponent; matchup and defensive-tier effects are OFF. Set ODDS_API_KEY "
-            "(see config.py) for real lines.", current_nfl_week)
-        record_source("vegas_odds", ok=False, rows=0, fallback="flat 21.5 totals, no opponents")
-        return _write_vegas(DEFAULT_FALLBACK_TOTALS, current_nfl_week, "fallback_no_api_key")
+        return _odds_unavailable(current_nfl_week, week_schedule, budget, "fallback_no_api_key",
+                                 "ODDS_API_KEY is not set (set it, see config.py, for the Odds API's lines)")
 
     if budget is not None:
         on_disk = _keepable_real_lines(current_nfl_week)
@@ -503,10 +592,12 @@ def fetch_vegas_implied_totals(current_nfl_week, sharp_polling=False, week_sched
             generate_nfl_power_ratings(on_disk)
             return on_disk
         if action == "hold":
-            logging.warning("VEGAS (week %d): no odds fetch this run -- %s.", current_nfl_week, why)
-            record_source("vegas_odds", ok=False, rows=0,
-                          fallback="this week's real lines kept" if on_disk else "flat 21.5 totals, no opponents")
-            return _write_vegas(DEFAULT_FALLBACK_TOTALS, current_nfl_week, "fallback_credit_reserve")
+            if on_disk:
+                logging.warning("VEGAS (week %d): no odds fetch this run -- %s.", current_nfl_week, why)
+                record_source("vegas_odds", ok=False, rows=0, fallback="this week's real lines kept")
+                return _write_vegas(DEFAULT_FALLBACK_TOTALS, current_nfl_week, "fallback_credit_reserve")
+            return _odds_unavailable(current_nfl_week, week_schedule, budget, "fallback_credit_reserve",
+                                     f"no odds fetch this run -- {why}")
 
     url = f"https://api.the-odds-api.com/v4/sports/americanfootball_nfl/odds/?apiKey={ODDS_API_KEY}&regions=us&markets=spreads,totals&bookmakers=draftkings"
     try:
@@ -517,19 +608,12 @@ def fetch_vegas_implied_totals(current_nfl_week, sharp_polling=False, week_sched
         logging.info("VEGAS (week %d): the odds fetch cost %s credits; %s left.", current_nfl_week,
                      _h.get("x-requests-last"), _h.get("x-requests-remaining"))
     except Exception as e:
-        logging.warning(
-            "VEGAS FALLBACK (week %d): odds API request failed (%s: %s). Every team gets a flat "
-            "21.5 total with no opponent for this run.", current_nfl_week, type(e).__name__, e)
-        record_source("vegas_odds", ok=False, rows=0, fallback="flat 21.5 totals, no opponents")
-        return _write_vegas(DEFAULT_FALLBACK_TOTALS, current_nfl_week, "fallback_api_error")
+        return _odds_unavailable(current_nfl_week, week_schedule, budget, "fallback_api_error",
+                                 f"odds API request failed ({type(e).__name__}: {e})")
 
     if not games:
-        logging.warning(
-            "VEGAS FALLBACK (week %d): odds API returned no games (market not posted, or wrong "
-            "window). Every team gets a flat 21.5 total with no opponent for this run.",
-            current_nfl_week)
-        record_source("vegas_odds", ok=False, rows=0, fallback="flat 21.5 totals, no opponents")
-        return _write_vegas(DEFAULT_FALLBACK_TOTALS, current_nfl_week, "fallback_empty_payload")
+        return _odds_unavailable(current_nfl_week, week_schedule, budget, "fallback_empty_payload",
+                                 "odds API returned no games (market not posted, or wrong window)")
 
     # B18: FA is the free-agent pseudo-team, not a club. It plays no game, so it
     # carries `no_game` like a bye rather than an implied calm afternoon.
@@ -620,6 +704,36 @@ def fetch_vegas_implied_totals(current_nfl_week, sharp_polling=False, week_sched
             {"total": round((over_under / 2.0) + (home_spread / 2.0), 2),
              "spread": -home_spread, "opponent": home_team}, **_wx_fields)
 
+    # A second opinion on the same week, only for the real sync (it passes a budget) and only when
+    # the engine's schedule can say which games belong to this week. Teams the Odds payload left
+    # out (a game already under way or finished is dropped from the feed) are filled from it, and
+    # the repair is NAMED in `_meta`; lines that disagree beyond LINES_CROSSCHECK_PTS are REPORTED.
+    # It never overrides a line the Odds API supplied.
+    patched, differ = [], {}
+    _nv_rows = _nflverse_rows(current_nfl_week) if (budget is not None and week_schedule) else None
+    if _nv_rows:
+        from fantasy_sim.config import LINES_CROSSCHECK_PTS
+        _nv = _nflverse.implied_totals(_nv_rows, week_schedule)
+        _home_of = {r["away"]: r["home"] for r in _nv_rows}
+        for team, entry in _nv.items():
+            if team not in implied_totals:
+                _wx = {k: v for k, v in _game_weather(_home_of.get(team, team)).items() if k != "hours_used"}
+                implied_totals[team] = dict(entry, **_wx)
+                patched.append(team)
+            else:
+                gap = implied_totals[team]["total"] - entry["total"]
+                if abs(gap) > LINES_CROSSCHECK_PTS:
+                    differ[team] = round(gap, 2)
+        if patched:
+            logging.info("VEGAS (week %d): %d team(s) the Odds payload left out were filled from nflverse's "
+                         "published lines: %s", current_nfl_week, len(patched), ", ".join(sorted(patched)))
+        if differ:
+            logging.warning(
+                "LINES CROSSCHECK (week %d): the Odds API and nflverse disagree by more than %.1f points on "
+                "the implied total for %s (Odds minus nflverse). The Odds API's line is still the one used.",
+                current_nfl_week, LINES_CROSSCHECK_PTS,
+                ", ".join(f"{t} {d:+.1f}" for t, d in sorted(differ.items())))
+
     unfilled = [team for team in NFL_TEAM_ABBREVIATIONS.values() if team not in implied_totals]
     for team in unfilled:
         # B18: a bye team has no game, so its weather is not unknown -- it is absent.
@@ -646,7 +760,12 @@ def fetch_vegas_implied_totals(current_nfl_week, sharp_polling=False, week_sched
                   fallback="weather_source=unavailable (nulls)" if _wx_failures else None)
     record_source("vegas_odds", ok=not unfilled, rows=len(implied_totals) - len(unfilled),
                   fallback="flat 21.5 / no opponent" if unfilled else None)
-    return _write_vegas(implied_totals, current_nfl_week, "odds_api")
+    extra = None
+    if _nv_rows:
+        extra = {"crosscheck": {"source": "nflverse", "differ": differ}}
+        if patched:
+            extra["patched_from_nflverse"] = sorted(patched)
+    return _write_vegas(implied_totals, current_nfl_week, "odds_api", extra)
 
 # B18 / F55. What a team entry's `weather_source` may say, so a reader of
 # vegas_totals.json can tell a real forecast from a dome from a failed lookup WITHOUT
@@ -1760,6 +1879,7 @@ def _sync_body(sharp_polling=False, official=False):
     if n_pending:
         print(f"[PENDING TRADES] {n_pending} pending trade(s) recorded (advisory).")
     warn_depth_mean_disagreements(baselines, players_db)
+    run_availability_watch(live_rosters_payload, baselines, current_nfl_week)
     # A commissioner adjustment leaves no transaction, so a budget that the history cannot
     # explain is the only trace it happened. Warns into the manifest like every other
     # watchdog; changes nothing.

@@ -181,6 +181,11 @@ WEEKLY_LINEUPS_FILE = _current("weekly_lineups.json")
 # {"_meta": {week, source, synced_at}, "players": {pid: {pos, stats, points, total}}}. Current
 # state, rewritten each sync. Read by the web UI only; never the engine.
 IDP_PROJECTIONS_FILE = _current("idp_projections.json")
+# The availability watchdog's findings (fantasy_sim.availability_watch): rostered players whose
+# availability the engine may be mis-pricing (carried baseline for an unprojected player; the
+# any-given-stat injury report disagreeing with Sleeper's status). ADVISORY current state,
+# rewritten each sync; no roster, lineup or simulation reads it.
+AVAILABILITY_WATCH_FILE = _current("availability_watch.json")
 # Each completed week's score as the league BANKED it (fantasy_sim.banked_scores): current stat
 # lines under the settings in force when the week was banked, commissioner overrides winning,
 # verified to the cent against the league's own totals. Written by the sync; the web UI reads
