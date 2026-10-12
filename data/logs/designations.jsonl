@@ -1107,3 +1107,8 @@
 {"injury_body_part": null, "injury_status": null, "name": "Ladd McConkey", "player_id": "11635", "practice_participation": null, "recorded_at": "2026-10-11T19:03:00Z", "team": "Cosmic Badgers", "week": 5}
 {"injury_body_part": "Finger", "injury_status": "Out", "name": "Roman Wilson", "player_id": "11630", "practice_participation": null, "recorded_at": "2026-10-11T19:03:00Z", "team": "Neon Walruses", "week": 5}
 {"injury_body_part": "Groin", "injury_status": "Out", "name": "David Montgomery", "player_id": "5892", "practice_participation": null, "recorded_at": "2026-10-11T19:03:00Z", "team": "Rocket Pandas", "week": 5}
+{"injury_body_part": "Hamstring", "injury_status": "Out", "name": "Deebo Samuel", "player_id": "5872", "practice_participation": null, "recorded_at": "2026-10-12T20:32:33Z", "team": "Crimson Marmots", "week": 5}
+{"injury_body_part": "Lower Leg", "injury_status": "Questionable", "name": "Quinshon Judkins", "player_id": "12512", "practice_participation": null, "recorded_at": "2026-10-12T20:32:33Z", "team": "Crimson Marmots", "week": 5}
+{"injury_body_part": "Lower Leg", "injury_status": "Questionable", "name": "Carson Schwesinger", "player_id": "12578", "practice_participation": null, "recorded_at": "2026-10-12T20:32:33Z", "team": "Iron Wombats", "week": 5}
+{"injury_body_part": "Undisclosed", "injury_status": "Questionable", "name": "Ollie Gordon", "player_id": "12495", "practice_participation": null, "recorded_at": "2026-10-12T20:32:33Z", "team": "Neon Walruses", "week": 5}
+{"injury_body_part": "Ankle", "injury_status": "Out", "name": "TreVeyon Henderson", "player_id": "12529", "practice_participation": null, "recorded_at": "2026-10-12T20:32:33Z", "team": "Turbo Llamas", "week": 5}
