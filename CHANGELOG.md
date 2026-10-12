@@ -5,6 +5,22 @@ in it, audit counts, hardware/season blockers, backlog, and what the tag does *n
 claim) live on the linked release. MAJOR means the model's predictions changed
 materially (see the release policy in `CLAUDE.md`).
 
+## [v11.0.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v11.0.0) — 2026-10-12 (MAJOR)
+
+**Ten seasons of nflverse data replace guesses, and two things the engine had wrong turn out to
+be the biggest.** The model's predictions change. A Questionable or Doubtful player used to be
+drawn healthy; they play 73.9% and 1.6% of the time (n = 6,035 and 643, 2016-2025), and the NFL's
+practice report moves Questionable from 51% to 91%. And the game environment entered twice:
+Sleeper's week-specific projection already holds about 71% of it (slope 0.290, se 0.185, n = 541)
+and the engine multiplied the full Vegas ratio on top, which is why quoted team totals ran about
+5.7 points per team-week above what teams scored on 2026 weeks 1-4. Also: LB and DB onset rates,
+TE vacated-volume capture, the bottom-defence bonus, and the nflverse fill-in for the games the
+Odds feed drops once they start (it moved one matchup's win probability by up to 5.9 points in a
+replay). Measured and rejected, on the record: the site's defence rating, a snap-share role
+signal, and "no projection means out". The goldens moved (week 1 league scoring -3.7%) and were
+regenerated alone; the 2025 points backtest still passes (bias change 0.29 points). The suite goes
+2314 → 2428. This tag is also the week 5-6 milestone.
+
 ## [v10.4.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v10.4.0) — 2026-10-01 (MINOR)
 
 **The league gets a public site, and the numbers get the league's own word.** The web UI
