@@ -10,151 +10,151 @@
   },
   "stage_a__run_simulation": {
     "all_play": {
-      "hash": "8b0f0e4ccd5c49593358c402eb43602c4e2e34ed7f8b548c302204389c6b97f3",
+      "hash": "270200a9f53ef53bab7d9007ab9b1d9cf05b28bc674e9102214981d2a410b3a9",
       "summary": {
-        "max": 1703.0,
+        "max": 1592.0,
         "mean": 1470.0,
-        "min": 1225.0,
+        "min": 1245.0,
         "n": 8,
-        "std": 158.188179,
+        "std": 94.510581,
         "sum": 11760.0
       }
     },
     "audit_log": {
-      "hash": "e7b7ea242f520a9360587ddfce71e873d3c62c8bc020b78d84b92d983347d036",
+      "hash": "78408bca631310329e1b2ec51f66013ee65870148e52969782708f2c8b7a7686",
       "summary": {
-        "max": 267.01,
-        "mean": 17.262028,
+        "max": 250.15,
+        "mean": 16.807034,
         "min": 0.0,
         "n": 3456,
-        "std": 29.586347,
-        "sum": 59657.57
+        "std": 28.04798,
+        "sum": 58085.11
       }
     },
     "b_champs": {
-      "hash": "b0a006cd04464af2b318a3ae7609bebbed28693dff50c5eab580841e946ce441",
+      "hash": "16215323cb34f5437d248a30be5ad2d6336e72094d6fc47d2ac64dd89c3fbc33",
       "summary": {
-        "max": 0.266667,
+        "max": 0.2,
         "mean": 0.125,
         "min": 0.0,
         "n": 16,
-        "std": 0.077728,
+        "std": 0.074068,
         "sum": 2.0
       }
     },
     "b_playoffs": {
-      "hash": "47cec8c4ab3817fdfdc5782f0e8b64318fe12147b3384da3931883f1fbfcd473",
+      "hash": "9828df8e858b39c88425c4fef40cf4211e94ccb98e59647c3bedd94990794e00",
       "summary": {
-        "max": 0.8,
+        "max": 0.666667,
         "mean": 0.5,
-        "min": 0.266667,
+        "min": 0.2,
         "n": 16,
-        "std": 0.124722,
+        "std": 0.137437,
         "sum": 8.0
       }
     },
     "b_toilets": {
-      "hash": "4abe166ad60d2d9f243c7187bc7478702878f2110eabaf129c8c90b2e09ab91a",
+      "hash": "0e982d65cc957a8541b4fe50f5ca1a22ad07dcda2154650cb5594762c097908b",
       "summary": {
         "max": 0.333333,
         "mean": 0.125,
         "min": 0.0,
         "n": 16,
-        "std": 0.096825,
+        "std": 0.084574,
         "sum": 2.0
       }
     },
     "champ_players": {
-      "hash": "33201a2617194cd31614944d7b6cec87718a640813a4e88cee567db33d829b4a",
+      "hash": "062cf4571edc7149984bd57e0b4108bb71cc5572c4c00d01724b4223227810ff",
       "summary": {
-        "max": 215.027464,
-        "mean": 24.33083,
-        "min": 0.0,
-        "n": 274,
-        "std": 34.282778,
-        "sum": 6666.647401
+        "max": 136.943203,
+        "mean": 21.92686,
+        "min": 1.0,
+        "n": 290,
+        "std": 28.74799,
+        "sum": 6358.789394
       }
     },
     "global_weekly_scores": {
-      "hash": "61490dced771337244b76a943de9f8664fb625ec60fe59055c4061326178f025",
+      "hash": "6ec86d1960004e10f973341d3adac347c4b0c11b4a632a492567bd5751804339",
       "summary": {
-        "max": 327.908722,
-        "mean": 168.025963,
-        "min": 62.102096,
+        "max": 360.825669,
+        "mean": 161.858188,
+        "min": 64.287925,
         "n": 3360,
-        "std": 41.10074,
-        "sum": 564567.234932
+        "std": 38.88352,
+        "sum": 543843.512251
       }
     },
     "h2h": {
-      "hash": "7f70127ffc6a8615160b34628f4acc43d7518cb520dd1b7573cb72a5c04eb9af",
+      "hash": "aa13a64a0a963a56f0c4e168fc2cec737ba67b3e686bd6d87bd4562dad089d66",
       "summary": {
-        "max": 269.0,
+        "max": 254.0,
         "mean": 183.75,
         "min": 0.0,
         "n": 64,
-        "std": 75.120944,
+        "std": 71.511581,
         "sum": 11760.0
       }
     },
     "max_score": {
-      "hash": "435e2819d672e18805027322e802d7e8fa2f3c319f821b8dbbd05ea15ec64f74",
+      "hash": "7fa82423b5e14614e903073acf29a2a19632f6f372a16e7b3a649024d61f3ac6",
       "summary": {
-        "max": 363.03423,
-        "mean": 363.03423,
-        "min": 363.03423,
+        "max": 360.825669,
+        "mean": 360.825669,
+        "min": 360.825669,
         "n": 1,
         "std": 0.0,
-        "sum": 363.03423
+        "sum": 360.825669
       }
     },
     "max_team": {
-      "hash": "86ea3a2b3c439f2475901c5917d8404aa2d38707535e84f567c53ef7c7bd81f1",
+      "hash": "a75f71d7e5c53934d78726c52d36de970f56a61cc4bfcb91fcbbec7d234d13f6",
       "summary": {
         "n": 0
       }
     },
     "max_wk": {
-      "hash": "e629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d8bdb",
+      "hash": "19581e27de7ced00ff1ce50b2047e7a567c76b1cbaebabe5ef03f7c3017bb5b7",
       "summary": {
-        "max": 15.0,
-        "mean": 15.0,
-        "min": 15.0,
+        "max": 9.0,
+        "mean": 9.0,
+        "min": 9.0,
         "n": 1,
         "std": 0.0,
-        "sum": 15.0
+        "sum": 9.0
       }
     },
     "points": {
-      "hash": "4fb801b0609bbdd716fbc56a176c631f789239bbc6d3163bc5d11c5a4976afa6",
+      "hash": "5e6d4ac9d657c0a2f121e5a511d723d73bd0aa952422edc11de2e07632774e57",
       "summary": {
-        "max": 3338.711841,
-        "mean": 2352.363479,
-        "min": 1599.89007,
+        "max": 3287.786711,
+        "mean": 2266.014634,
+        "min": 1531.05839,
         "n": 240,
-        "std": 317.465402,
-        "sum": 564567.234932
+        "std": 295.252658,
+        "sum": 543843.512251
       }
     },
     "pts_against": {
-      "hash": "8691ee732277ed9408a1306690afe4438e5e10968794b5ed79796cf369c15896",
+      "hash": "1a456600e48060ddcd490247c31f22a22324ce23666649b885dd70af94777554",
       "summary": {
-        "max": 72080.902076,
-        "mean": 70570.904367,
-        "min": 69312.463272,
+        "max": 69238.140566,
+        "mean": 67980.439031,
+        "min": 66224.127944,
         "n": 8,
-        "std": 779.159808,
-        "sum": 564567.234932
+        "std": 1095.895367,
+        "sum": 543843.512251
       }
     },
     "seed_matrix": {
-      "hash": "07961825b63b2414b4545961dc466fec97a3fff04d44f9af190f950e918f3a88",
+      "hash": "18d1d4b383077b67bd495480b797bdc97a31072e783a72af2b3278da419d11b9",
       "summary": {
-        "max": 8.0,
+        "max": 10.0,
         "mean": 3.75,
-        "min": 0.0,
+        "min": 1.0,
         "n": 64,
-        "std": 2.128673,
+        "std": 1.903943,
         "sum": 240.0
       }
     },
@@ -170,38 +170,38 @@
       }
     },
     "trajectories": {
-      "hash": "0e8a45e899609cbd13b676d659f1a0a4a9fd6723598f297c1fe79f75afb539d9",
+      "hash": "32564ae1fd4543d852d0a18909e9c310a9dfb124d3f3db03b9ed9b93adf3ab49",
       "summary": {
-        "max": 28.0,
+        "max": 27.0,
         "mean": 7.5,
         "min": 0.0,
         "n": 3360,
-        "std": 5.505679,
+        "std": 5.561828,
         "sum": 25200.0
       }
     },
     "wins": {
-      "hash": "c8c230b7f6b05f8a430f9ad8727f918e9d85f1b2c335bf42f1b8845f7d441059",
+      "hash": "f5fc4d995f1b581f4955975c6ccd86ec90e4ce7177a10503922b4321bfde0d97",
       "summary": {
-        "max": 28.0,
+        "max": 27.0,
         "mean": 14.0,
         "min": 0.0,
         "n": 240,
-        "std": 5.877925,
+        "std": 5.881468,
         "sum": 3360.0
       }
     }
   },
   "stage_b__export_and_visualize": {
     "live_season_forecast_week_1.json": {
-      "hash": "1e8cbd3dfd6380bc2565cb2df55082681c81e48b0ecbc457649c94cf97d9ea53",
+      "hash": "ad04c4cf1b185681c65c033a244080a0d506e57b8827d87acf574280dfeddf31",
       "summary": {
         "max": 100.0,
-        "mean": 25.260453,
+        "mean": 25.258812,
         "min": 0.0,
         "n": 64,
-        "std": 31.719227,
-        "sum": 1616.669
+        "std": 31.725799,
+        "sum": 1616.564
       }
     },
     "model_learning_report_week_1.json": {
@@ -216,7 +216,7 @@
       }
     },
     "sim_outcomes_week_1.json": {
-      "hash": "6bfce38d226f8e9e70b8d2a72723072144ac6700740ff92945d7ae986552ab50",
+      "hash": "2d55dae909f0dbf60cc9723910dcca3269e5197bc88732f8d1b54397c96323f2",
       "summary": {
         "max": 30.0,
         "mean": 7.777778,
@@ -227,49 +227,49 @@
       }
     },
     "simulation_audit_log_sim0_week_1.json": {
-      "hash": "bd4d0df01b11ebe446c7a3b249a54cb3e0d34a9afb4830710fd6bf536191b413",
+      "hash": "483055bac29460b7da3613274d3b53e11fe5ae536320899ff664362297522b4e",
       "summary": {
-        "max": 267.01,
-        "mean": 17.262028,
+        "max": 250.15,
+        "mean": 16.807034,
         "min": 0.0,
         "n": 3456,
-        "std": 29.586347,
-        "sum": 59657.57
+        "std": 28.04798,
+        "sum": 58085.11
       }
     },
     "syndicate_comprehensive_matrix_week_1.json": {
-      "hash": "c218ec7257260229a577bd077bfdd82dba5459f1bc7819cc77c6c87b8d5e005c",
+      "hash": "2cd2cb81472560724ea02819cad8810df59f6964112a9dc4fc578f7375e2ba84",
       "summary": {
-        "max": 2515.364128,
-        "mean": 79.313194,
-        "min": 0.0,
+        "max": 2325.32259,
+        "mean": 77.019224,
+        "min": 0.733333,
         "n": 395,
-        "std": 333.645701,
-        "sum": 30694.206059
+        "std": 321.119166,
+        "sum": 29806.439771
       }
     },
     "syndicate_insights_week_1.json": {
-      "hash": "1423321c9c37dabe01b6649018544475e972f304d53475b30d9ebbd8411962a5",
+      "hash": "e9786c0149170aadb678f4217dc01b5fd31c0d8deffff139146afe01e0be29eb",
       "summary": {
-        "max": 363.03,
-        "mean": 79.987304,
-        "min": -1.34,
+        "max": 360.83,
+        "mean": 77.491043,
+        "min": -2.11,
         "n": 23,
-        "std": 96.893435,
-        "sum": 1839.708
+        "std": 94.795436,
+        "sum": 1782.294
       }
     }
   },
   "stage_c__export_champ_ranking": {
     "live_season_forecast_week_1.json": {
-      "hash": "1e8cbd3dfd6380bc2565cb2df55082681c81e48b0ecbc457649c94cf97d9ea53",
+      "hash": "ad04c4cf1b185681c65c033a244080a0d506e57b8827d87acf574280dfeddf31",
       "summary": {
         "max": 100.0,
-        "mean": 25.260453,
+        "mean": 25.258812,
         "min": 0.0,
         "n": 64,
-        "std": 31.719227,
-        "sum": 1616.669
+        "std": 31.725799,
+        "sum": 1616.564
       }
     },
     "model_learning_report_week_1.json": {
@@ -284,36 +284,36 @@
       }
     },
     "simulation_audit_log_sim0_week_1.json": {
-      "hash": "bd4d0df01b11ebe446c7a3b249a54cb3e0d34a9afb4830710fd6bf536191b413",
+      "hash": "483055bac29460b7da3613274d3b53e11fe5ae536320899ff664362297522b4e",
       "summary": {
-        "max": 267.01,
-        "mean": 17.262028,
+        "max": 250.15,
+        "mean": 16.807034,
         "min": 0.0,
         "n": 3456,
-        "std": 29.586347,
-        "sum": 59657.57
+        "std": 28.04798,
+        "sum": 58085.11
       }
     },
     "syndicate_comprehensive_matrix_week_1.json": {
-      "hash": "c218ec7257260229a577bd077bfdd82dba5459f1bc7819cc77c6c87b8d5e005c",
+      "hash": "2cd2cb81472560724ea02819cad8810df59f6964112a9dc4fc578f7375e2ba84",
       "summary": {
-        "max": 2515.364128,
-        "mean": 79.313194,
-        "min": 0.0,
+        "max": 2325.32259,
+        "mean": 77.019224,
+        "min": 0.733333,
         "n": 395,
-        "std": 333.645701,
-        "sum": 30694.206059
+        "std": 321.119166,
+        "sum": 29806.439771
       }
     },
     "syndicate_insights_week_1.json": {
-      "hash": "aeb54fc2992189df28e3c0d2f4c921907d5178bac3e1993f5274972d80afa8e5",
+      "hash": "1a087dfd33ccd09e932734cc1c14e68258abeac495e5603e746d2f5406613dd1",
       "summary": {
-        "max": 800.0,
-        "mean": 173.418857,
-        "min": -1.34,
+        "max": 666.7,
+        "mean": 156.83181,
+        "min": -2.11,
         "n": 63,
-        "std": 196.05714,
-        "sum": 10925.388
+        "std": 174.091243,
+        "sum": 9880.404
       }
     }
   }
