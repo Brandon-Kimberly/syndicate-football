@@ -1,0 +1,15 @@
+player-weeks compared: 2238
+stat           n_sleeper>0  sum sleeper   sum AGS  ratio  exact match %
+idp_tkl_solo          1771       4409.0    4437.0  1.006          89.7%
+idp_tkl_ast           1665       3606.0    3832.0  1.063          89.8%
+idp_tkl_loss           545        680.0     680.0  1.000         100.0%
+idp_sack               353        354.0     354.0  1.000         100.0%
+idp_qb_hit             654        974.0     972.0  0.998          99.7%
+idp_int                 87         90.0      90.0  1.000         100.0%
+idp_pass_def           468        579.0     575.0  0.993          99.6%
+idp_ff                 127        130.0     130.0  1.000         100.0%
+idp_fum_rec             65         66.0      68.0  1.030          99.9%
+points: mean Sleeper 6.16  mean AGS 6.25  ratio 1.015  corr 0.994  MAE 0.19  exact 84.9%
+  DL: n=907 Sleeper 4.63 AGS 4.66 MAE 0.11
+  LB: n=594 Sleeper 7.59 AGS 7.74 MAE 0.30
+  DB: n=737 Sleeper 6.88 AGS 7.01 MAE 0.20

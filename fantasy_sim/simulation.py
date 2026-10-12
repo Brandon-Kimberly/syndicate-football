@@ -340,6 +340,9 @@ class FantasySimulationEngine:
                         # the engine in a loop and were exposed. See
                         # tests/test_invariants.py::TestConfigConstantsSurviveARun.
                         self.baselines[p_name] = copy.deepcopy(SIM_CONFIG["KNOWN_MISSING_ASSETS"][p_name])
+                        # a hand-typed judgment is not Sleeper's projection for this week, so the
+                        # environment-neutralisation (ENV_SHARE_IN_PROJECTION) must leave it alone
+                        self.baselines[p_name].setdefault('projection_source', 'hand_typed')
                         # The whitelist has no bye field worth trusting; take it from what
                         # sync wrote into nfl_schedule.json's _meta.byes, the same value every
                         # other baseline carries. Read, never re-derived here: sync is the one
@@ -436,6 +439,11 @@ class FantasySimulationEngine:
         except Exception:
             self.faab_profiles = {t: dict(p) for t, p in MANAGER_PROFILES.items()}
 
+        # ENV_SHARE_IN_PROJECTION (2026-10-12): Sleeper's weekly projection already holds most of the game
+        # environment; strip it out so the one full implied-total ratio the engine applies is the only one.
+        # BEFORE the interval inflation and the blend, which both read these means.
+        self.env_neutralized = self._neutralize_projection_environment()
+
         # B7: widen the predictive intervals BEFORE anything reads them. Measured at
         # sd_z_opt 1.27 against a nominal 1.0 -- see config.INTERVAL_INFLATION for the
         # backtest entry and why this is aleatoric-only. Applied to self.baselines, which
@@ -506,11 +514,27 @@ class FantasySimulationEngine:
             return
         team_vacated_volume[p_pos][nfl_team] = (
             team_vacated_volume[p_pos].get(nfl_team, 0.0)
-            + season_mean * SIM_CONFIG['VACATED_VOLUME_CAPTURE_RATE']
+            + season_mean * SIM_CONFIG.get('VACATED_VOLUME_CAPTURE_BY_POSITION', {}).get(
+                p_pos, SIM_CONFIG['VACATED_VOLUME_CAPTURE_RATE'])
         )
 
     @staticmethod
-    def _initial_absence_clock(injury_status, on_ir):
+    def game_status_play_probability(injury_status, pos, practice=None):
+        """P(the player takes the field THIS week) for a game-time status, or None when the status
+        carries no such probability (healthy, Out, IR ...: those go through INITIAL_ABSENCE_STATUSES).
+        Measured, not guessed: SIM_CONFIG['GAME_STATUS_PLAY_PROBABILITY'] and, for a Questionable player
+        whose practice report is known, the practice table (derived constants, 2026-10-12). `pos` None
+        means the caller has no position and so no probability -- the pre-2026-10-12 contract."""
+        if pos is None or injury_status not in SIM_CONFIG["GAME_STATUS_PLAY_PROBABILITY"]:
+            return None
+        table = SIM_CONFIG["GAME_STATUS_PLAY_PROBABILITY"][injury_status]
+        if injury_status == "Questionable" and practice in ("full", "limited", "dnp"):
+            by = SIM_CONFIG["QUESTIONABLE_PLAY_PROBABILITY_BY_PRACTICE"]
+            return by.get(pos, by["DEFAULT"])[practice]
+        return table.get(pos, table["DEFAULT"])
+
+    @staticmethod
+    def _initial_absence_clock(injury_status, on_ir, pos=None, practice=None):
         """Weeks a player who is out NOW stays out, drawn once per simulated season (F4).
         Returns 0 for a player who starts healthy -- and draws nothing in that case, so a
         roster with no statuses leaves the RNG stream untouched.
@@ -521,10 +545,24 @@ class FantasySimulationEngine:
         slot -- already >= 2 weeks in) with ABSENCE_RETURN_HAZARD_STEADY, memoryless
         thereafter. No vacated-volume pool is opened for an initial absence: the projection
         sources the baselines come from already price the teammates' extra volume (the
-        blank-slate backtest priors do not -- a known under-count, noted in AUDIT_PLAN F4)."""
+        blank-slate backtest priors do not -- a known under-count, noted in AUDIT_PLAN F4).
+
+        Game-time statuses (2026-10-12): given a position, a 'Questionable' or 'Doubtful' player misses
+        THIS week with probability 1 - game_status_play_probability (measured on 2016-2025 nflverse
+        reports and snap counts; the practice report refines Questionable) -- the first week of the
+        miss certain, a second with the measured persistence, then the steady hazard. Without a
+        position there is no probability and the contract is the old one: healthy, no RNG drawn."""
         status = injury_status if injury_status in SIM_CONFIG["INITIAL_ABSENCE_STATUSES"] else None
         if status is None and not on_ir:
-            return 0
+            p_play = FantasySimulationEngine.game_status_play_probability(injury_status, pos, practice)
+            if p_play is None or np.random.rand() < p_play:
+                return 0
+            weeks = 1
+            hazard = SIM_CONFIG["GAME_STATUS_FIRST_WEEK_RETURN_HAZARD"][injury_status]
+            while weeks < 16 and np.random.rand() >= hazard:
+                weeks += 1
+                hazard = SIM_CONFIG["ABSENCE_RETURN_HAZARD_STEADY"]
+            return weeks
         stage1 = status in SIM_CONFIG["INITIAL_ABSENCE_STAGE1_STATUSES"] and not on_ir
         weeks = 1
         hazard = SIM_CONFIG["ABSENCE_RETURN_HAZARD_FIRST_WEEK"] if stage1 else SIM_CONFIG["ABSENCE_RETURN_HAZARD_STEADY"]
@@ -574,10 +612,13 @@ class FantasySimulationEngine:
         # removal comment for why this is no longer split by pass vs. rush.
         top_def = self.defensive_tiers.get('TOP_DEFENSE', [])
         bottom_def = self.defensive_tiers.get('BOTTOM_DEFENSE', [])
-        if v_opp in top_def and p_pos in ['QB', 'WR', 'TE']: script_mult -= 0.06
-        elif v_opp in bottom_def and p_pos in ['QB', 'WR', 'TE']: script_mult += 0.06
-        if v_opp in top_def and p_pos == 'RB': script_mult -= 0.06
-        elif v_opp in bottom_def and p_pos == 'RB': script_mult += 0.06
+        # Tier size measured 2017-2025 (SIM_CONFIG DEF_TIER_*): a top-5 defence costs the offence 6%, a
+        # bottom-5 one gives it 4% (it was a symmetric 6%).
+        top_pen, bot_bonus = SIM_CONFIG['DEF_TIER_TOP_PENALTY'], SIM_CONFIG['DEF_TIER_BOTTOM_BONUS']
+        if v_opp in top_def and p_pos in ['QB', 'WR', 'TE']: script_mult -= top_pen
+        elif v_opp in bottom_def and p_pos in ['QB', 'WR', 'TE']: script_mult += bot_bonus
+        if v_opp in top_def and p_pos == 'RB': script_mult -= top_pen
+        elif v_opp in bottom_def and p_pos == 'RB': script_mult += bot_bonus
 
         if v_spr <= -5.5:
             if p_pos == 'RB': script_mult += 0.15
@@ -1149,6 +1190,50 @@ class FantasySimulationEngine:
         game_spread = round(opp_implied - implied_tot, 2)
         return {'total': implied_tot, 'spread': game_spread, 'wind_mph': 0.0, 'precip_prob': 0.0, 'opponent': opp}
 
+    # Fewer real games than this and the week's own level (the mean implied total) is not known: the
+    # Odds feed drops a game once it starts, so a late-week file can hold only the remaining ones, and
+    # a mean over three prime-time games is not the week's. Skip rather than guess. (A normal week has 28-32
+    # teams with a game; the nflverse repair, when on, restores the full set.)
+    ENV_MIN_TEAMS = 20
+
+    def _neutralize_projection_environment(self):
+        """Divide each THIS-WEEK projection baseline by the share of the game environment Sleeper's
+        number already holds: mean / (1 + share x (r - 1)), r = the team's implied total over the
+        week's mean. Standard deviations follow their own formulas (epistemic is a rate times the mean,
+        aleatoric a constant times its square root). Returns how many baselines changed.
+
+        Left alone: a mean that is not this week's projection (carried, hand-typed, auto-zero:
+        `projection_source`, `auto_imputed`), a team with no game or a condemned line, and any file with
+        fewer than ENV_MIN_TEAMS real games. A share of 0 changes nothing."""
+        share = float(SIM_CONFIG.get("ENV_SHARE_IN_PROJECTION", 0.0))
+        if share <= 0.0 or not isinstance(self.vegas, dict):
+            return 0
+        lines = {t: l for t, l in self.vegas.items()
+                 if t not in ('FA', '_meta') and isinstance(l, dict) and l.get('opponent', 'FA') != 'FA'
+                 and t not in self.stale_vegas_teams and float(l.get('total') or 0) > 0}
+        if len(lines) < self.ENV_MIN_TEAMS:
+            return 0
+        week_mean = sum(float(l['total']) for l in lines.values()) / len(lines)
+        changed = 0
+        for name, p in self.baselines.items():
+            if not isinstance(p, dict) or p.get('projection_source') or p.get('auto_imputed'):
+                continue
+            line = lines.get(p.get('team'))
+            mean = float(p.get('mean') or 0.0)
+            if line is None or mean <= 0.0:
+                continue
+            f = 1.0 / (1.0 + share * (float(line['total']) / week_mean - 1.0))
+            p['mean'] = mean * f
+            if p.get('std_epistemic') is not None:
+                p['std_epistemic'] = float(p['std_epistemic']) * f
+            if p.get('std_aleatoric') is not None:
+                p['std_aleatoric'] = float(p['std_aleatoric']) * f ** 0.5
+            changed += 1
+        if changed:
+            logging.info("ENV: %d baselines made environment-neutral (share %.2f of the implied-total ratio "
+                         "is already in Sleeper's projection; week mean total %.2f).", changed, share, week_mean)
+        return changed
+
     def _check_vegas_staleness(self):
         """Decides, per team, whether the Vegas file on disk may be applied to the current
         week, and says so loudly when it may not.
@@ -1384,7 +1469,9 @@ class FantasySimulationEngine:
                         if not isinstance(p_meta, dict): p_meta = {}
                         status = p_meta.get("injury_status", p_info.get("injury_status"))
                         on_ir = bool(p_meta.get("on_ir", p_info.get("on_ir", False)))
-                        clock = self._initial_absence_clock(status, on_ir)
+                        clock = self._initial_absence_clock(
+                            status, on_ir, normalize_position(p_meta.get('pos', p_info.get('pos', 'FLEX'))),
+                            p_meta.get("practice_status", p_info.get("practice_status")))
                         if clock:
                             injury_clocks[p_name] = clock
                 # Streamers won last week and not yet used: (ladder value, week won). A won

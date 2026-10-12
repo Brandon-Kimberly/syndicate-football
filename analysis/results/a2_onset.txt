@@ -1,0 +1,33 @@
+== A3: weekly all-cause absence-onset hazard | played last game (starters-by-share), REG 2016-2025
+  DB: 1064/21349 = 0.0498 [0.047,0.053]   config 0.02  OUTSIDE
+  DL: 344/12572 = 0.0274 [0.025,0.03]   config 0.025  inside
+  LB: 445/12459 = 0.0357 [0.033,0.039]   config 0.025  OUTSIDE
+  QB: 253/4582 = 0.0552 [0.049,0.062]   config 0.054  inside
+  RB: 112/3111 = 0.0360 [0.03,0.043]   config 0.07  OUTSIDE
+  TE: 169/4706 = 0.0359 [0.031,0.042]   config 0.035  inside
+  WR: 485/11418 = 0.0425 [0.039,0.046]   config 0.081  OUTSIDE
+   by season (all positions): [(2016, 0.0331), (2017, 0.0337), (2018, 0.0312), (2019, 0.0369), (2020, 0.0485), (2021, 0.0584), (2022, 0.0386), (2023, 0.0425), (2024, 0.0422), (2025, 0.0431)]
+== A2: persistence. P(misses team's next game | listed Q/D at g and did NOT play g)  [fantasy-relevant]
+  Out          not played: n=2377 P(also misses next)=0.562 (0.542, 0.582)
+  Doubtful     not played: n=494 P(also misses next)=0.397 (0.355, 0.441)
+  Questionable not played: n=1276 P(also misses next)=0.276 (0.252, 0.301)
+  Questionable played: n=3995 P(misses next)=0.071
+== practice-status logistic for Questionable (fantasy-relevant)
+  n = 5922
+   intercept(QB,Full)   +1.439  (se 0.172)
+   RB                   +0.836  (se 0.196)
+   WR                   +1.104  (se 0.164)
+   TE                   +1.014  (se 0.193)
+   DL                   +1.426  (se 0.169)
+   LB                   +1.045  (se 0.168)
+   DB                   +0.544  (se 0.156)
+   Limited              -1.228  (se 0.109)
+   DNP                  -2.356  (se 0.122)
+   QB {'full': 0.808, 'limited': 0.553, 'dnp': 0.286}
+   RB {'full': 0.907, 'limited': 0.74, 'dnp': 0.48}
+   WR {'full': 0.927, 'limited': 0.788, 'dnp': 0.547}
+   TE {'full': 0.921, 'limited': 0.773, 'dnp': 0.524}
+   DL {'full': 0.946, 'limited': 0.837, 'dnp': 0.625}
+   LB {'full': 0.923, 'limited': 0.778, 'dnp': 0.532}
+   DB {'full': 0.879, 'limited': 0.68, 'dnp': 0.408}
+  log-loss: constant pooled 0.5726 | position+practice logistic 0.5241 | engine's implicit 1.0 (clipped .99): 1.2027

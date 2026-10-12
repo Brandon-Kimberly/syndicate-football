@@ -267,7 +267,9 @@ class TestStreamerValueBound(unittest.TestCase):
                     if s["name"].startswith("STREAMER_"):
                         pos = s["name"].split("_")[1]
                         cap = run.replacement_levels.get(pos, 4.0)
-                        if s["expected"] > cap + 1e-9:
+                        # the audit log rounds `expected` to 2 decimals, so a streamer valued AT the cap can
+                        # read up to half a cent above it (8.2587 -> 8.26); that is not "worth more"
+                        if s["expected"] > cap + 0.005 + 1e-9:
                             worst.append((wk, team, s["name"], s["expected"], round(cap, 2)))
         self.assertEqual(worst, [], "streamers valued above their position's replacement level: %r" % worst[:6])
 

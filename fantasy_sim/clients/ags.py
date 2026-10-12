@@ -33,6 +33,19 @@ def _parse_time(text):
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
+def practice_token(description):
+    """'dnp' | 'limited' | 'full' | None from an injury item's description, which the site builds as
+    "TEAM POS . body part . <practice wording> . Week N ..." from the NFL report's practice status."""
+    text = str(description or "").lower()
+    if "did not practice" in text:
+        return "dnp"
+    if "limited in practice" in text:
+        return "limited"
+    if "full practice" in text:
+        return "full"
+    return None
+
+
 def check_meta(meta, now):
     ver = (meta or {}).get("data_version")
     if ver not in SUPPORTED_DATA_VERSIONS:
@@ -71,7 +84,8 @@ def fetch_injury_report(get=None, now=None, timeout=20):
             if sid:
                 players[str(sid)] = {"status": it.get("status"), "change": it.get("change"),
                                      "week": it.get("week"), "headline": it.get("headline"),
-                                     "detail": it.get("description"), "published": it.get("published")}
+                                     "detail": it.get("description"), "published": it.get("published"),
+                                     "practice": practice_token(it.get("description"))}
     report = news.get("injury_report") or {}
     return {"_meta": {"source": SITE, "generated_at": meta.get("generated_at"),
                       "data_version": meta.get("data_version"), "age_hours": round(age, 1),

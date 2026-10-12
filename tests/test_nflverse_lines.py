@@ -155,30 +155,29 @@ class TestFallback(_Drive):
 
 
 class TestRepairAndCrosscheck(_Drive):
-    def test_the_repair_is_off_by_default_and_the_candidates_are_only_named(self):
-        """Measured 2026-10-12 on the week-5 file: filling the 28 teams the Odds payload omitted
-        (finished games) moved P(win) by up to 5.9 points. That is an engine-input change the
-        goldens cannot see -> MAJOR-class, so it waits for the bundled MAJOR (config)."""
+    def test_the_repair_is_on_and_a_team_the_odds_payload_left_out_is_filled_and_named(self):
+        """On as of the derived-constants MAJOR. Measured 2026-10-12 on the week-5 file: filling the 28
+        teams the Odds payload omitted (finished games) moved P(win) by up to 5.9 points -- an
+        engine-input change the goldens cannot see, which is why it was built off and ships in a MAJOR."""
         from fantasy_sim import config
-        self.assertFalse(config.NFLVERSE_REPAIR_ENABLED)
+        self.assertTrue(config.NFLVERSE_REPAIR_ENABLED)
         out, _s = self.go()
-        self.assertEqual(out["BUF"]["opponent"], "FA", "the Odds payload's own behaviour is unchanged")
-        self.assertNotIn("patched_from_nflverse", out["_meta"])
-        self.assertEqual(sorted(out["_meta"]["repairable_from_nflverse"]), ["BUF", "LAR"])
-        self.assertEqual(out["_meta"]["source"], "odds_api")
-
-    def test_when_enabled_a_team_the_odds_payload_left_out_is_repaired_and_named(self):
         # the Odds feed has DET/GB only; BUF@LAR is on the schedule and in nflverse
-        with patch("fantasy_sim.config.NFLVERSE_REPAIR_ENABLED", True):
-            out, _s = self.go()
         self.assertEqual(out["BUF"]["opponent"], "LAR")
         self.assertEqual(out["LAR"]["opponent"], "BUF")
         self.assertEqual(sorted(out["_meta"]["patched_from_nflverse"]), ["BUF", "LAR"])
+        self.assertEqual(sorted(out["_meta"]["repairable_from_nflverse"]), ["BUF", "LAR"])
         self.assertEqual(out["_meta"]["source"], "odds_api")
 
-    def test_a_team_with_no_game_this_week_is_not_invented(self):
-        with patch("fantasy_sim.config.NFLVERSE_REPAIR_ENABLED", True):
+    def test_with_the_flag_off_the_candidates_are_only_named(self):
+        with patch("fantasy_sim.config.NFLVERSE_REPAIR_ENABLED", False):
             out, _s = self.go()
+        self.assertEqual(out["BUF"]["opponent"], "FA", "the Odds payload's own behaviour")
+        self.assertNotIn("patched_from_nflverse", out["_meta"])
+        self.assertEqual(sorted(out["_meta"]["repairable_from_nflverse"]), ["BUF", "LAR"])
+
+    def test_a_team_with_no_game_this_week_is_not_invented(self):
+        out, _s = self.go()
         self.assertEqual(out["KC"]["opponent"], "FA")
 
     def test_a_large_disagreement_is_recorded_and_warned(self):

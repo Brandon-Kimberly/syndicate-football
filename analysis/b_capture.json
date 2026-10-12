@@ -1,0 +1,46 @@
+{
+ "RB": {
+  "events": 316,
+  "mean_absent_trailing_pts": 13.23,
+  "event_delta": 8.684,
+  "placebo_delta": 0.366,
+  "capture": 0.6287,
+  "ci95": [
+   0.5416,
+   0.7181
+  ]
+ },
+ "WR": {
+  "events": 368,
+  "mean_absent_trailing_pts": 12.041,
+  "event_delta": 6.689,
+  "placebo_delta": 0.407,
+  "capture": 0.5217,
+  "ci95": [
+   0.4189,
+   0.6218
+  ]
+ },
+ "TE": {
+  "events": 178,
+  "mean_absent_trailing_pts": 9.251,
+  "event_delta": 4.136,
+  "placebo_delta": 0.363,
+  "capture": 0.4079,
+  "ci95": [
+   0.3139,
+   0.5127
+  ]
+ },
+ "ALL": {
+  "events": 862,
+  "mean_absent_trailing_pts": 11.901,
+  "event_delta": 6.893,
+  "placebo_delta": 0.378,
+  "capture": 0.5474,
+  "ci95": [
+   0.492,
+   0.6061
+  ]
+ }
+}

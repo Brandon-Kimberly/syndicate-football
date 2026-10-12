@@ -113,17 +113,22 @@ class TestTheTrapStaysShut(_Case):
         from fantasy_sim.decisions import _unavailable_now, _entry
         self.assertFalse(_unavailable_now(_entry(self.engine, QUESTIONABLE)))
 
-    def test_his_week_expectation_is_not_discounted(self):
-        """The surfacing must not sneak in a haircut: the Sleeper projection already
-        prices expected usage, so a second discount would double-count."""
+    def test_his_week_expectation_is_discounted_by_the_measured_probability_and_by_nothing_else(self):
+        """B4 said a discount "would double-count" because Sleeper's projection already prices
+        expected usage. Measured 2026-10-12 (docs/audit/DERIVED_CONSTANTS_2026-10.md, analysis/i_qproj.py):
+        it does not -- 39 rostered Questionable players' projections were 1.03x their healthy-week ones
+        (control 1.01x) -- and nflverse says a Questionable fantasy starter plays 73.9% of the time. So
+        the week expectation is the healthy-twin scaling times P(plays | Questionable, position): no
+        second haircut, no missing one."""
         from fantasy_sim.decisions import week_expectation
+        from fantasy_sim.config import SIM_CONFIG
         healthy_twin = f"{TEAMS[0][:2]}_WR_4"
         q = week_expectation(self.engine, QUESTIONABLE, 1)
         h = week_expectation(self.engine, healthy_twin, 1)
+        pos = self.engine.baselines[QUESTIONABLE]["pos"]
+        table = SIM_CONFIG["GAME_STATUS_PLAY_PROBABILITY"]["Questionable"]
         self.assertAlmostEqual(q / self.engine.baselines[QUESTIONABLE]["mean"],
-                               h / self.engine.baselines[healthy_twin]["mean"], places=6,
-                               msg="a Questionable player must be scaled exactly like a "
-                                   "healthy one -- surfacing only")
+                               table.get(pos, table["DEFAULT"]) * h / self.engine.baselines[healthy_twin]["mean"], places=6)
 
 
 class TestTheDesignationReachesTheTools(_Case):

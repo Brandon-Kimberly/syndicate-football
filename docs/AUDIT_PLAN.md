@@ -6688,3 +6688,38 @@ built to wait for:
 
 Wiring that into `bid_ledger.reconcile` changes what F61's calibration is scored on, so it
 is its own tests-first change. It moves no prediction; it moves a measurement's inputs.
+
+
+### F89 — Constants derived from ten seasons of nflverse data; two held fixes decided on evidence — RESOLVED (2026-10-12) — MAJOR
+
+Owner request: use the any-given-stat site's data (nflverse play-by-play, injury reports, snap
+counts, 2016-2025) to improve the model automatically. The evidence, the decisions and the
+rejections are in `docs/audit/DERIVED_CONSTANTS_2026-10.md`; every analysis is a script in
+`analysis/` with its printed output in `analysis/results/`. The IDP stat lines were validated
+against Sleeper's own for 2026 weeks 1-4 first (2,238 player-weeks, fantasy points correlate
+0.994, ratio 1.015).
+
+**What was wrong, in order of consequence.**
+1. **Game-time status was priced as healthy** (F4's "no game-time-probability source" and B4's "a
+   discount would double-count"). P(plays | Questionable) = 0.739 and P(plays | Doubtful) = 0.016 on
+   n = 6035 / 643 fantasy-relevant starters, and the practice report moves Questionable 0.51-0.91.
+   Sleeper does not discount (1.03x, n = 39, control 1.01x), so B4's premise was false.
+2. **The game environment entered twice.** Sleeper's week-specific projection already holds ~71% of
+   it (slope 0.290, se 0.185, n = 541); the engine multiplied the full implied-total ratio on top.
+3. IDP onset hazards were unsourced nudges (LB, DB measured outside their intervals), the TE
+   vacated-volume capture was 8 events' worth of evidence, and the bottom-defence bonus was +6% where
+   +3.7% is measured.
+
+**Changed (tests first; goldens regenerated in their own commit, deltas explained there).**
+`SIM_CONFIG`: `GAME_STATUS_PLAY_PROBABILITY`, `QUESTIONABLE_PLAY_PROBABILITY_BY_PRACTICE`,
+`GAME_STATUS_FIRST_WEEK_RETURN_HAZARD`, `INJURY_RATES` LB 0.036 / DB 0.050,
+`VACATED_VOLUME_CAPTURE_BY_POSITION` {TE: 0.45}, `DEF_TIER_BOTTOM_BONUS` 0.04,
+`ENV_SHARE_IN_PROJECTION` 0.71; `NFLVERSE_REPAIR_ENABLED` on. The week tools price the same
+availability in `week_expectation`. `scripts.env_check` re-measures the environment share weekly.
+
+**Measured and rejected** (so they are not proposed again): any-given-stat's adjusted defence rating
+as the tier source (ties the engine's, 0.113 vs 0.112); a snap-share trend as a role signal (-1.0 +/-
+2.3 points per full share, n = 402); "no Sleeper projection means out" (67.5% of 77 played).
+
+**Open.** The environment share is one season's four weeks (interval ~0.35-1.07) and is monitored, not
+settled. The known-absence assumption for a drawn Questionable miss rests on 0 of 11 locked zeros.

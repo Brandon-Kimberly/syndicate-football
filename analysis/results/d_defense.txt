@@ -1,0 +1,20 @@
+observations: 3906
+signal                         corr with points allowed   (95% CI over seasons)    slope (fantasy pts per +1 pt of rating)
+eng                                               0.112   [0.066, 0.156]   0.864
+ags                                               0.113   [0.059, 0.16]   1.165
+   2017: engine-like +0.018   AGS +0.065
+   2018: engine-like +0.152   AGS +0.159
+   2019: engine-like +0.219   AGS +0.192
+   2020: engine-like +0.159   AGS +0.216
+   2021: engine-like +0.088   AGS +0.094
+   2022: engine-like +0.048   AGS +0.021
+   2023: engine-like +0.073   AGS +0.005
+   2024: engine-like +0.009   AGS +0.028
+   2025: engine-like +0.182   AGS +0.177
+AGS better in 5 of 9 seasons
+   blend 0.25 AGS: corr 0.118
+   blend 0.50 AGS: corr 0.121
+   blend 0.75 AGS: corr 0.120
+tier test (engine multiplies skill players by 0.94 / 1.06):
+   eng: top-5 defenses allow 0.945x the week's mean, bottom-5 allow 1.035x   (n=675 each)
+   ags: top-5 defenses allow 0.945x the week's mean, bottom-5 allow 1.039x   (n=675 each)

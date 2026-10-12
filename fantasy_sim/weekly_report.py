@@ -191,7 +191,8 @@ def append_predictions_log(week, season_outcomes, outlook, path=None, manifest=N
                        "lineup": [{"slot": p.get("slot"), "name": p.get("name"), "nfl_team": p.get("nfl_team"),
                                    "expected": _r(p.get("expected")), "sd": _r(p.get("sd")),
                                    "baseline_mean": _r(p.get("baseline_mean")),
-                                   "env_ratio": _r(p.get("env_ratio"), 4), "script": _r(p.get("script"), 4)}
+                                   "env_ratio": _r(p.get("env_ratio"), 4), "script": _r(p.get("script"), 4),
+                                   "availability": _r(p.get("availability"), 4)}
                                   for p in (d.get("lineup") or [])]}
                    for t, d in (outlook.get("teams") or {}).items()},
         "outlook_sims": outlook.get("n"), "outlook_cross": outlook.get("cross"),

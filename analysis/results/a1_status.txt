@@ -1,0 +1,67 @@
+== fantasy-relevant (share >= 0.5, gp >= 6)
+  DB  Doubtful      n=  228 P(play)=0.013 [0.004,0.038]
+  DB  Out           n= 1183 P(play)=0.000 [0.0,0.003]
+  DB  Questionable  n= 1955 P(play)=0.673 [0.652,0.694]
+  DL  Doubtful      n=   87 P(play)=0.034 [0.012,0.097]
+  DL  Out           n=  468 P(play)=0.000 [0.0,0.008]
+  DL  Questionable  n= 1043 P(play)=0.815 [0.79,0.837]
+  LB  Doubtful      n=  103 P(play)=0.000 [0.0,0.036]
+  LB  Out           n=  497 P(play)=0.002 [0.0,0.011]
+  LB  Questionable  n=  935 P(play)=0.773 [0.745,0.799]
+  QB  Doubtful      n=   39 P(play)=0.000 [0.0,0.09]
+  QB  Out           n=  159 P(play)=0.000 [-0.0,0.024]
+  QB  Questionable  n=  210 P(play)=0.586 [0.518,0.65]
+  RB  Doubtful      n=   40 P(play)=0.000 [-0.0,0.088]
+  RB  Out           n=  162 P(play)=0.000 [-0.0,0.023]
+  RB  Questionable  n=  322 P(play)=0.717 [0.666,0.764]
+  TE  Doubtful      n=   40 P(play)=0.025 [0.004,0.129]
+  TE  Out           n=  227 P(play)=0.004 [0.001,0.025]
+  TE  Questionable  n=  398 P(play)=0.779 [0.736,0.817]
+  WR  Doubtful      n=  106 P(play)=0.028 [0.01,0.08]
+  WR  Out           n=  600 P(play)=0.000 [0.0,0.006]
+  WR  Questionable  n= 1172 P(play)=0.771 [0.746,0.794]
+  ALL Out           n= 3296 P(play)=0.001 (0.0, 0.002)
+  ALL Questionable  n= 6035 P(play)=0.739 (0.727, 0.749)
+  ALL Doubtful      n=  643 P(play)=0.016 (0.008, 0.028)
+== all listed players
+  DB  Doubtful      n=  367 P(play)=0.011 [0.004,0.028]
+  DB  Out           n= 2016 P(play)=0.000 [-0.0,0.002]
+  DB  Questionable  n= 2911 P(play)=0.631 [0.614,0.649]
+  DL  Doubtful      n=  177 P(play)=0.023 [0.009,0.057]
+  DL  Out           n= 1142 P(play)=0.000 [0.0,0.003]
+  DL  Questionable  n= 2017 P(play)=0.719 [0.699,0.739]
+  LB  Doubtful      n=  195 P(play)=0.000 [0.0,0.019]
+  LB  Out           n= 1244 P(play)=0.001 [0.0,0.005]
+  LB  Questionable  n= 1797 P(play)=0.715 [0.693,0.735]
+  QB  Doubtful      n=   53 P(play)=0.000 [-0.0,0.068]
+  QB  Out           n=  277 P(play)=0.000 [0.0,0.014]
+  QB  Questionable  n=  286 P(play)=0.479 [0.422,0.537]
+  RB  Doubtful      n=  151 P(play)=0.013 [0.004,0.047]
+  RB  Out           n=  720 P(play)=0.000 [0.0,0.005]
+  RB  Questionable  n= 1073 P(play)=0.629 [0.6,0.657]
+  TE  Doubtful      n=   95 P(play)=0.011 [0.002,0.057]
+  TE  Out           n=  638 P(play)=0.002 [0.0,0.009]
+  TE  Questionable  n=  773 P(play)=0.693 [0.66,0.725]
+  WR  Doubtful      n=  194 P(play)=0.015 [0.005,0.044]
+  WR  Out           n= 1148 P(play)=0.001 [0.0,0.005]
+  WR  Questionable  n= 1869 P(play)=0.708 [0.687,0.728]
+  ALL Doubtful      n= 1232 P(play)=0.011 (0.007, 0.019)
+  ALL Questionable  n=10726 P(play)=0.675 (0.666, 0.684)
+  ALL Out           n= 7185 P(play)=0.000 (0.0, 0.001)
+== Questionable relevant, by season
+   2016.0 844 0.806
+   2017.0 659 0.751
+   2018.0 626 0.703
+   2019.0 562 0.689
+   2020.0 581 0.731
+   2021.0 748 0.766
+   2022.0 700 0.721
+   2023.0 689 0.737
+   2024.0 626 0.709
+== Questionable relevant by practice_status
+   Limited Participation in Practice 3886 0.748
+   Full Participation in Practice 1116 0.913
+   Did Not Participate In Practice 980 0.506
+   
+     53 0.679
+NoStatus relevant: (11862, 332)

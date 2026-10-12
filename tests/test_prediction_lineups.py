@@ -22,9 +22,9 @@ class TestOutlookLineupDecomposition(td._EngineCase):
         for team in r["teams"].values():
             self.assertTrue(team["lineup"])
             for row in team["lineup"]:
-                for k in ("baseline_mean", "env_ratio", "script"):
+                for k in ("baseline_mean", "env_ratio", "script", "availability"):
                     self.assertIn(k, row, f"{row['name']} lacks {k}")
-                self.assertAlmostEqual(row["baseline_mean"] * row["env_ratio"] * row["script"],
+                self.assertAlmostEqual(row["baseline_mean"] * row["env_ratio"] * row["script"] * row["availability"],
                                        row["expected"], places=6,
                                        msg="the logged factors must reproduce the logged expectation")
 
@@ -36,7 +36,7 @@ class TestPredictionRecordKeepsTheLineup(unittest.TestCase):
                                "sd_total": 30.0, "expected_pre_total": 160.0,
                                "lineup": [{"slot": "QB", "name": "P One", "expected": 20.0, "sd": 9.0,
                                            "flag": None, "nfl_team": "DET", "baseline_mean": 15.0,
-                                           "env_ratio": 1.2, "script": 1.1111111111}]},
+                                           "env_ratio": 1.2, "script": 1.1111111111, "availability": 1.0}]},
                          "B": {"opponent": "A", "p_beat_median": 0.4, "expected_total": 140.0,
                                "sd_total": 30.0, "expected_pre_total": 150.0, "lineup": []}}}
 
@@ -51,7 +51,7 @@ class TestPredictionRecordKeepsTheLineup(unittest.TestCase):
         self.assertEqual(a["expected_pre_total"], 160.0)
         p = a["lineup"][0]
         self.assertEqual((p["slot"], p["name"], p["nfl_team"]), ("QB", "P One", "DET"))
-        self.assertAlmostEqual(p["baseline_mean"] * p["env_ratio"] * p["script"], p["expected"], places=3)
+        self.assertAlmostEqual(p["baseline_mean"] * p["env_ratio"] * p["script"] * p["availability"], p["expected"], places=3)
         self.assertNotIn("flag", p, "display-only fields stay out of the permanent record")
         self.assertEqual(row["median"]["B"]["lineup"], [])
 

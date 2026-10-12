@@ -1,0 +1,8 @@
+offensive player-weeks: 541
+all       n= 541  slope of relative residual on relative implied total: +0.290 (se 0.185)   [0 = already in Sleeper's number, +1 = absent]   sd(env)=0.148
+QB        n=  67  slope of relative residual on relative implied total: +0.786 (se 0.382)   [0 = already in Sleeper's number, +1 = absent]   sd(env)=0.132
+RB        n= 182  slope of relative residual on relative implied total: +0.441 (se 0.326)   [0 = already in Sleeper's number, +1 = absent]   sd(env)=0.141
+WR        n= 223  slope of relative residual on relative implied total: -0.043 (se 0.295)   [0 = already in Sleeper's number, +1 = absent]   sd(env)=0.151
+TE        n=  69  slope of relative residual on relative implied total: +0.585 (se 0.591)   [0 = already in Sleeper's number, +1 = absent]   sd(env)=0.154
+sanity: actual/projection - 1 on env  (same thing, shown as ratio): slope +0.290 (se 0.185)
+        raw actual points on env: +12.7 pts per +1.0 relative total (se 2.4); mean projection 12.2

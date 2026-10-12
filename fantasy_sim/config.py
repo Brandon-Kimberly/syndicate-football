@@ -96,12 +96,13 @@ ODDS_API_KEY = os.getenv("ODDS_API_KEY", "").strip()
 # UNVERIFIED beyond that single week; it only decides whether a line is REPORTED, never which one is used.
 LINES_CROSSCHECK_PTS = 3.0
 # NFLVERSE_REPAIR_ENABLED (2026-10-12): fill the teams the Odds payload omitted (a game already under
-# way or finished drops out of the feed) from nflverse's published lines. OFF, deliberately: replaying
-# the week-5 file with and without the 28 omitted teams moved a matchup's P(win) by up to 5.9 points
-# (4 matchups: -1.7, +3.4, +5.9, -0.9) -- an engine INPUT change the goldens cannot see, hence
-# MAJOR-class under the release policy. Turn on only inside the bundled MAJOR with release notes.
-# With it off the omitted teams are still NAMED in vegas_totals _meta.repairable_from_nflverse.
-NFLVERSE_REPAIR_ENABLED = False
+# way or finished drops out of the feed) from nflverse's published lines. It was built OFF because
+# replaying the week-5 file with and without the 28 omitted teams moved a matchup's P(win) by up to
+# 5.9 points (4 matchups: -1.7, +3.4, +5.9, -0.9) -- an engine INPUT change the goldens cannot see, hence
+# MAJOR-class under the release policy -- and switched ON inside the derived-constants MAJOR, whose
+# release notes carry that number. The omitted teams are also NAMED in vegas_totals
+# _meta.repairable_from_nflverse, filled or not.
+NFLVERSE_REPAIR_ENABLED = True
 ODDS_FETCH_COST = 2
 # Held back for the official runs; nothing else may spend below it. Measured basis:
 # canonical-run fired 13 times in September 2026, quiet skips included, so at most ~13
@@ -776,9 +777,21 @@ SIM_CONFIG = {
     #
     # K is left unchanged -- no data found suggesting the existing very-low rate is wrong, and
     # kicker durability relative to every other position is well-established and uncontroversial.
+    #
+    # 2026-10-12 (docs/audit/DERIVED_CONSTANTS_2026-10.md, analysis/a2_onset.py): the "NO DATA" IDP
+    # positions were MEASURED on nflverse snap counts, 2016-2025 regular seasons, fantasy-relevant
+    # players (mean snap share >= 0.5 over >= 6 games), hazard = P(no snap in the team's next game |
+    # played this one) -- the absence the engine's onset mechanic produces (a missed game, then a
+    # duration). Wilson 95%, same decision rule as above (move only where the config value lies OUTSIDE):
+    #   QB 253/4582 = 0.055 [0.049, 0.062]  config 0.054 inside      TE 169/4706 = 0.036 [0.031, 0.042]  0.035 inside
+    #   DL 344/12572 = 0.027 [0.025, 0.030] config 0.025 inside      LB 445/12459 = 0.036 [0.033, 0.039]  0.025 OUTSIDE
+    #   DB 1064/21349 = 0.050 [0.047, 0.053] config 0.020 OUTSIDE
+    #   RB 112/3111 = 0.036 and WR 485/11418 = 0.043 are NOT comparable with the 2025 values above: those
+    #   count a played-but-scoreless week as a zero, this counts only a missed game, so RB/WR stay.
+    # So LB 0.025 -> 0.036 and DB 0.020 -> 0.050, with the intervals written beside them.
     "INJURY_RATES": {
         'RB': 0.070, 'WR': 0.081, 'TE': 0.035, 'QB': 0.054,
-        'DL': 0.025, 'LB': 0.025, 'DB': 0.020, 'K': 0.005
+        'DL': 0.025, 'LB': 0.036, 'DB': 0.050, 'K': 0.005
     },
     # Injury DURATION model (given an onset event, from INJURY_RATES, has occurred -- i.e.
     # already conditioned on "this causes at least one missed game", matching how
@@ -825,6 +838,44 @@ SIM_CONFIG = {
     "INITIAL_ABSENCE_STAGE1_STATUSES": ("Out",),
     "ABSENCE_RETURN_HAZARD_FIRST_WEEK": 0.29,
     "ABSENCE_RETURN_HAZARD_STEADY": 0.16,
+    # Game-time injury status (2026-10-12; docs/audit/DERIVED_CONSTANTS_2026-10.md, analysis/a1_status.py,
+    # a2_onset.py). The note above said Questionable/Doubtful had "no game-time-probability source" and
+    # drew them healthy. nflverse's injury reports joined to snap counts, 2016-2025 regular seasons,
+    # fantasy-relevant starters (>= 0.5 snap share, >= 6 games): P(logs a snap | Questionable) = 0.739
+    # (n = 6035) and P(logs a snap | Doubtful) = 0.016 (n = 643, Wilson 0.008-0.028); by position the
+    # Questionable figure is below (n 210-1955 each). Sleeper's projection does NOT already discount a
+    # Questionable player (39 rostered cases: 1.03x the same player's healthy-week projection, control
+    # 1.01x), so B4's "would double-count" premise does not hold. The draw is once per simulated season,
+    # like every initial absence, and a drawn miss is KNOWN to the manager, not a locked zero: of 11
+    # rostered Questionable players who did not play in 2026 weeks 3-4, 0 were in a started lineup
+    # (n small: the upper 95% bound on the locked share is ~0.25).
+    # Doubtful by position is too thin to split (0-3 plays per position), so it is one pooled rate.
+    "GAME_STATUS_PLAY_PROBABILITY": {
+        "Questionable": {"QB": 0.586, "RB": 0.717, "WR": 0.771, "TE": 0.779, "DL": 0.815, "LB": 0.773,
+                         "DB": 0.673, "DEFAULT": 0.739},
+        "Doubtful": {"DEFAULT": 0.016},
+    },
+    # The practice report moves the Questionable probability a great deal (n = 5922): full participation
+    # 0.913, limited 0.748, did not participate 0.506. Fitted jointly with position as a logistic
+    # (log-loss 0.524 vs 0.573 pooled, vs 1.20 for the old "plays for certain"); the table is that fit
+    # evaluated per position. DEFAULT is the raw pooled rate. Present only when the sync matched the
+    # NFL's report to Sleeper's own Questionable status for the same week.
+    "QUESTIONABLE_PLAY_PROBABILITY_BY_PRACTICE": {
+        "QB": {"full": 0.808, "limited": 0.553, "dnp": 0.286},
+        "RB": {"full": 0.907, "limited": 0.740, "dnp": 0.480},
+        "WR": {"full": 0.927, "limited": 0.788, "dnp": 0.547},
+        "TE": {"full": 0.921, "limited": 0.773, "dnp": 0.524},
+        "DL": {"full": 0.946, "limited": 0.837, "dnp": 0.625},
+        "LB": {"full": 0.923, "limited": 0.778, "dnp": 0.532},
+        "DB": {"full": 0.879, "limited": 0.680, "dnp": 0.408},
+        "DEFAULT": {"full": 0.913, "limited": 0.748, "dnp": 0.506},
+    },
+    # Persistence after a missed game (fantasy-relevant, 2016-2025): P(also misses the team's next game)
+    # = 0.276 for a Questionable player who did not play (n = 1276), 0.397 for Doubtful (n = 494), 0.562
+    # for Out (n = 2377). The status-miss clock is the first week certain, then returns with these
+    # hazards (1 - persistence), then the steady hazard like every other clock. Out keeps its own
+    # 2025-derived 0.29 above (a rostered-player measurement, a different population).
+    "GAME_STATUS_FIRST_WEEK_RETURN_HAZARD": {"Questionable": 0.724, "Doubtful": 0.603},
     # Locked-lineup onsets (F5 step 2, AUDIT_PLAN.md). Real 2025 lineups (Sleeper matchup
     # payloads, starters + players_points, 1,768 rostered player-weeks, bye weeks excluded):
     # of 203 zero weeks, 90% were BENCHED -- the manager knew before lock and the bench filled
@@ -886,7 +937,41 @@ SIM_CONFIG = {
     # reasonable, not precisely calibrated -- a good candidate for tightening if better
     # aggregate redistribution data turns up.
     "VACATED_VOLUME_CAPTURE_RATE": 0.65,
+    # 2026-10-12 (docs/audit/DERIVED_CONSTANTS_2026-10.md, analysis/b_capture.py): the F30 revisit, on
+    # ALL 862 RB/WR/TE absences 2016-2025 instead of 8 (a player with a trailing 4-game mean >= 8/8/6
+    # points and >= 40% snap share who played the team's previous game and logged no snap; the
+    # absentee's same-position teammates' points above their own trailing means, minus the same
+    # quantity on team-weeks with no such absence, as a multiple of his trailing mean):
+    #   RB 0.629 [0.542, 0.714] (n 316)   WR 0.522 [0.422, 0.620] (n 368)   TE 0.408 [0.307, 0.510] (n 178)
+    #   pooled 0.547 [0.488, 0.607]; by era the WR figure rises 0.41 -> 0.56 -> 0.63 and TE reads 0.25 ->
+    #   0.55 -> 0.44. Under the same rule as INJURY_RATES, only TE lies OUTSIDE its interval at 0.65, and
+    #   its two recent eras average ~0.50, so TE moves to 0.45; RB (inside) and WR (inside the recent
+    #   estimate, marginally outside the all-years one, trending up) stay at 0.65. The earlier "+1.53" was
+    #   8 events with a different denominator and is superseded. The measure is conservative if
+    #   anything: the denominator is a trailing mean of a player selected for being high.
+    "VACATED_VOLUME_CAPTURE_BY_POSITION": {"TE": 0.45},
     "VACATED_VOLUME_ELIGIBLE_POSITIONS": ['RB', 'WR', 'TE'],
+    # Defensive-tier script multiplier (_script_multiplier): top-5 defences cut QB/RB/WR/TE by 6%, bottom-5
+    # raise them. Measured 2017-2025 weeks 3-17 (analysis/d_defense.py, n = 675 team-weeks per tier):
+    # the fantasy points QB+RB+WR+TE scored against a top-5 defence were 0.945x the week's mean
+    # (the 6% penalty is right) and against a bottom-5 defence 1.035x (95% CI 1.016-1.054, so +6% lies
+    # outside it) -> bonus 0.04. The same test rejected swapping in any-given-stat's opponent-adjusted
+    # defence rating as the tier source: it ties the engine's own estimate (corr 0.113 vs 0.112).
+    "DEF_TIER_TOP_PENALTY": 0.06,
+    "DEF_TIER_BOTTOM_BONUS": 0.04,
+    # ENV_SHARE_IN_PROJECTION (2026-10-12; analysis/g_envcheck.py): the share of the game environment that
+    # Sleeper's WEEK-SPECIFIC projection already contains. The engine multiplies each baseline (that
+    # projection, blended) by the team's implied total over the schedule's, so the environment entered
+    # twice. 2026 weeks 1-5, 541 offensive player-weeks (projection >= 6, played): the relative residual
+    # (actual - Sleeper) / Sleeper regressed on the team's relative implied total has slope 0.290
+    # (se 0.185): 0 would mean Sleeper has all of it, 1 none. Raw points track the total at ~1.04, so the
+    # environment is real; Sleeper just already holds ~71% of it (QB 0.79, RB 0.44, WR -0.04, TE 0.59: per
+    # position too noisy to split). The engine's baseline is made environment-neutral at load,
+    # mean / (1 + share x (ratio - 1)) with ratio = the team's implied total over the week's mean, and
+    # then takes the one full ratio it always applied. UNVERIFIED beyond four weeks of one season
+    # (the interval on the share is roughly 0.35-1.07): scripts.env_check re-measures it as 2026 accrues;
+    # 0 restores the old behaviour exactly.
+    "ENV_SHARE_IN_PROJECTION": 0.71,
     "CORRELATIONS": {
         "QB_WR1": 0.4, "QB_WR2": 0.315, "QB_TE": 0.35, "QB_RB": 0, "WR_WR": -0.004
     },

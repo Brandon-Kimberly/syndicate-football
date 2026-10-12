@@ -1,0 +1,21 @@
+pos events  mean X event dPts placebo dPts  excess  capture     95% CI (bootstrap)
+RB     316   13.23       8.68         0.37    8.32    0.629         [0.542, 0.718]
+WR     368   12.04       6.69         0.41    6.28    0.522         [0.419, 0.622]
+TE     178    9.25       4.14         0.36    3.77    0.408         [0.314, 0.513]
+ALL    862   11.90       6.89         0.38    6.51    0.547         [0.492, 0.606]
+by era (ALL):
+   2016-2019: n=300  capture 0.503
+   2020-2022: n=305  capture 0.549
+   2023-2025: n=257  capture 0.612
+by position x era:
+   RB 2016-2019: n=114  capture 0.672
+   RB 2020-2022: n=115  capture 0.555
+   RB 2023-2025: n= 87  capture 0.688
+   WR 2016-2019: n=125  capture 0.411
+   WR 2020-2022: n=129  capture 0.555
+   WR 2023-2025: n=114  capture 0.625
+   TE 2016-2019: n= 61  capture 0.252
+   TE 2020-2022: n= 61  capture 0.546
+   TE 2023-2025: n= 56  capture 0.442
+   absentee trailing mean >= 10.0: n=535 capture 0.542
+   absentee trailing mean >= 12.0: n=367 capture 0.521

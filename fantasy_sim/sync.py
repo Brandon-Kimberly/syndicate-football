@@ -469,6 +469,13 @@ def run_availability_watch(live_rosters, baselines, week):
     gate would read it as a forecast problem). Findings are in AVAILABILITY_WATCH_FILE."""
     try:
         report = _ags.try_fetch_injury_report()
+        # the practice report prices a Questionable player's availability (engine, 2026-10-12); stamped on
+        # the baselines the engine will load, and the file rewritten only when a stamp actually changed
+        _before = {k: (b.get("practice_status") if isinstance(b, dict) else None) for k, b in (baselines or {}).items()}
+        n_prac = _availability_watch.annotate_practice(baselines, (report or {}).get("players"), week)
+        if {k: (b.get("practice_status") if isinstance(b, dict) else None) for k, b in (baselines or {}).items()} != _before:
+            save_json(BASELINES_FILE, baselines)
+            logging.info("AVAILABILITY WATCH: practice status stamped on %d Questionable baseline(s).", n_prac)
         findings = _availability_watch.write_availability_watch(
             AVAILABILITY_WATCH_FILE, live_rosters, baselines, week, ags_report=report,
             now=datetime.now())

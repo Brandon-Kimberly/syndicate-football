@@ -1,0 +1,36 @@
+== week01: league mean weekly team score and mean change in playoff share, vs ALL-OLD constants
+   variant     league mean pts  d pts vs all_old  max |d playoff share|
+   new                  161.84             -5.45                  0.142
+   env_off              165.41             -1.88                  0.133
+   tier_off             160.95             -6.34                  0.133
+   te_off               161.84             -5.45                  0.142
+   rates_off            161.48             -5.81                  0.167
+   all_old              167.29             +0.00                  0.000
+   environment neutralisation    : -3.57 pts per team-week (new minus reverted)
+   bottom-tier bonus 0.04        : +0.89 pts per team-week (new minus reverted)
+   TE capture 0.45               : +0.00 pts per team-week (new minus reverted)
+   LB/DB onset rates             : +0.36 pts per team-week (new minus reverted)
+== week06: league mean weekly team score and mean change in playoff share, vs ALL-OLD constants
+   variant     league mean pts  d pts vs all_old  max |d playoff share|
+   new                  165.07             -1.33                  0.117
+   env_off              165.07             -1.33                  0.117
+   tier_off             165.99             -0.41                  0.075
+   te_off               165.07             -1.33                  0.117
+   rates_off            165.45             -0.95                  0.083
+   all_old              166.40             +0.00                  0.000
+   environment neutralisation    : +0.00 pts per team-week (new minus reverted)
+   bottom-tier bonus 0.04        : -0.92 pts per team-week (new minus reverted)
+   TE capture 0.45               : +0.00 pts per team-week (new minus reverted)
+   LB/DB onset rates             : -0.38 pts per team-week (new minus reverted)
+== week15: league mean weekly team score and mean change in playoff share, vs ALL-OLD constants
+   variant     league mean pts  d pts vs all_old  max |d playoff share|
+   new                     nan              +nan                  0.000
+   env_off                 nan              +nan                  0.000
+   tier_off                nan              +nan                  0.000
+   te_off                  nan              +nan                  0.000
+   rates_off               nan              +nan                  0.000
+   all_old                 nan              +nan                  0.000
+   environment neutralisation    : +nan pts per team-week (new minus reverted)
+   bottom-tier bonus 0.04        : +nan pts per team-week (new minus reverted)
+   TE capture 0.45               : +nan pts per team-week (new minus reverted)
+   LB/DB onset rates             : +nan pts per team-week (new minus reverted)

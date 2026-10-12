@@ -1,0 +1,3 @@
+Questionable n= 39  projection this week / projection last week (healthy): mean 1.03  median 1.02
+Doubtful     n=  3  projection this week / projection last week (healthy): mean 0.86  median 0.90
+control (all players with no flag on record) n=159: mean ratio 1.01  median 1.00

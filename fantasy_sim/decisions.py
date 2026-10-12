@@ -83,7 +83,7 @@ def sample_week_scores(engine, name, week, n, seed=None, starter=True):
 
     for i in range(n):
         # F4: initial absence, drawn once per simulated season -- one draw per sample here.
-        if engine._initial_absence_clock(status, on_ir) >= weeks_ahead:
+        if engine._initial_absence_clock(status, on_ir, pos, p.get('practice_status')) >= weeks_ahead:
             continue
         # onset this week: the slot realises nothing from this player (benched or locked zero)
         if np.random.rand() < hazard:
@@ -895,23 +895,37 @@ def _env_norm(engine):
     return cached
 
 
+def availability_factor(engine, entry, week):
+    """P(he takes the field) as the pre-game expectation prices it: the measured game-time-status
+    probability for a Questionable or Doubtful player in the CURRENT week (practice report refining
+    Questionable), else 1. Known before kickoff, so it is not lookahead; any other week is 1 because
+    next week's status does not exist yet (the onset hazard prices that)."""
+    if week != engine.current_week:
+        return 1.0
+    p = engine.game_status_play_probability(entry.get('injury_status'),
+                                            normalize_position(entry.get('pos', 'FLEX')),
+                                            entry.get('practice_status'))
+    return 1.0 if p is None else float(p)
+
+
 def week_expectation_parts(engine, name, week):
-    """(baseline mean, environment ratio, game-script multiplier) whose product is
+    """(baseline mean, environment ratio, game-script multiplier, availability) whose product is
     week_expectation. Kept apart so the prediction record can show WHICH factor moved a team's
     expected total (2026-10-11: the owner's quoted totals ran ~20 above what they scored, and the
-    record held only the total). An unavailable player is (mean, 0.0, 0.0)."""
+    record held only the total). An unavailable player is (mean, 0.0, 0.0, 0.0)."""
     e = _entry(engine, name)
     mean = float(e.get('mean', 0.0))
     if e.get('bye') == week or _unavailable_now(e):
-        return mean, 0.0, 0.0
+        return mean, 0.0, 0.0, 0.0
     pos = normalize_position(e.get('pos', 'FLEX'))
     veg = engine._compute_week_environment(week, e.get('team', 'FA'))
-    return mean, veg['total'] / _env_norm(engine), engine._script_multiplier(pos, veg)
+    return (mean, veg['total'] / _env_norm(engine), engine._script_multiplier(pos, veg),
+            availability_factor(engine, e, week))
 
 
 def week_expectation(engine, name, week):
-    mean, ratio, script = week_expectation_parts(engine, name, week)
-    return mean * ratio * script
+    mean, ratio, script, avail = week_expectation_parts(engine, name, week)
+    return mean * ratio * script * avail
 
 
 def _slot_positions(slot):
@@ -1134,8 +1148,10 @@ def sample_week_matrix(engine, groups, week, n, seed=None, cross=True, starter_e
         pos = normalize_position(e.get('pos', 'FLEX')); team = e.get('team', 'FA')
         status, on_ir = e.get('injury_status'), bool(e.get('on_ir', False))
         absent = np.zeros(n, dtype=bool)
-        if status in SIM_CONFIG["INITIAL_ABSENCE_STATUSES"] or on_ir:
-            clocks = np.array([engine._initial_absence_clock(status, on_ir) for _ in range(n)])
+        practice = e.get('practice_status')
+        if (status in SIM_CONFIG["INITIAL_ABSENCE_STATUSES"] or on_ir
+                or engine.game_status_play_probability(status, pos, practice) is not None):
+            clocks = np.array([engine._initial_absence_clock(status, on_ir, pos, practice) for _ in range(n)])
             absent = clocks >= weeks_ahead
         onset = np.random.rand(n) < SIM_CONFIG['INJURY_RATES'].get(pos, 0.025) * exposure
         mu_0 = float(e.get('mean', 8.0)); sig_e = float(e.get('std_epistemic', mu_0 * ANON_EPISTEMIC_RATE)); std_a = float(e.get('std_aleatoric', 3.0))
@@ -1883,7 +1899,7 @@ def league_week_outlook(engine, week, sims=5000, seed=None, cross=True):
             "lineup": [{"slot": s_, "name": nm, "expected": exp[nm], "sd": sd[nm],
                         "flag": injury_flag(_entry(engine, nm)),   # B4: display only
                         "nfl_team": _entry(engine, nm).get('team', 'FA'),
-                        **dict(zip(("baseline_mean", "env_ratio", "script"),
+                        **dict(zip(("baseline_mean", "env_ratio", "script", "availability"),
                                    week_expectation_parts(engine, nm, week)))}
                        for nm, s_ in sorted(lineups[t], key=lambda x: x[1])],
         }

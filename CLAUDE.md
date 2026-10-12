@@ -18,7 +18,7 @@ requirements.txt`). On this machine plain `python` resolves to the retired Windo
 access violation in the test process (`AUDIT_PLAN.md` R1). Use the launcher:
 
 ```bash
-py -3.10 -m unittest discover tests      # full suite — 2385 tests, must all pass
+py -3.10 -m unittest discover tests      # full suite — 2428 tests, must all pass
 py -3.10 -m tests.test_golden_master     # reproducibility harness — 15 tests, three scenarios, byte-exact
 py -3.10 -m tests.golden_sync            # sync-stage golden: baseline generation from pinned inputs (--regenerate = MAJOR)
 py -3.10 -m scripts.run_behavior_check   # sim mechanic rates vs real 2025 + drift vs committed baseline
@@ -52,6 +52,7 @@ py -3.10 -m scripts.build_public_site    # the public site (static simple view, 
 py -3.10 -m scripts.readme_shots         # retake the README screenshots; REQUIRED after any template/render.py change (docs guard)
 py -3.10 -m scripts.banked_scores        # past weeks as the league BANKED them (settings then in force + commissioner overrides), checked to the cent; --write
 py -3.10 -m scripts.capture_scoreboard   # record ESPN's live scoreboard (UI-M5's data); the scoreboard-capture workflow runs it on Sundays
+py -3.10 -m scripts.env_check            # re-measure ENV_SHARE_IN_PROJECTION (how much game environment Sleeper's projection already holds) from public data; read-only
 py -3.10 -m scripts.availability_watch   # who the engine may be mis-pricing: carried baselines for unprojected players + the any-given-stat injury report vs Sleeper (advisory)
 py -3.10 -m scripts.season_movie        # the season as GIFs (wins/points banked, title+playoff odds); real names under data/, --fictional to share
 py -3.10 -m scripts.streamer_study       # C5: BASE_STREAMER_MEANS vs the live free-agent pool (measurement only; changing it is MAJOR)
@@ -124,16 +125,30 @@ instead of the flat 21.5 table, and the canonical gate ACCEPTS that source (the 
 still block; the row's provenance keeps `vegas_source`). Real Odds lines already on disk for the
 week still win. When the Odds fetch succeeds, implied totals that differ from nflverse's by more than
 `LINES_CROSSCHECK_PTS` are warned (`LINES CROSSCHECK`, benign to the gate; the Odds line is still
-used), and the teams its payload left out (a finished game drops out of the feed -- DAL and TB,
-2026-10-11) are NAMED in `_meta.repairable_from_nflverse` but NOT filled: filling them is gated by
-`NFLVERSE_REPAIR_ENABLED` (False), because replaying week 5 with and without the 28 omitted teams
-moved a matchup's P(win) by up to 5.9 points -- an engine-input change, MAJOR-class, held for the
-bundled MAJOR. Only a sync that passes a budget does any of this.
+used), and the teams its payload left out (a finished game drops out of the feed -- 28 of 32 on a
+Monday) are filled from nflverse (`NFLVERSE_REPAIR_ENABLED`, ON since the derived-constants MAJOR;
+replaying week 5 with and without them moved a matchup's P(win) by up to 5.9 points) and named in
+`_meta.patched_from_nflverse`. Only a sync that passes a budget does any of this.
 The any-given-stat site's published injury feed (`clients/ags.py`: refused unless `data_version` is
 known and under 48 h old; any failure = no second opinion, logged at INFO) feeds
 `availability_watch.json`, which also flags carried baselines for players Sleeper projects at
-nothing (Caleb Williams, 2026-10-12). The crosscheck and the watchdog are ADVISORY and the fallback only
-replaces a flat table: no draw moves when the Odds API works. The model fixes that would act on them are HELD (the held-fixes memory).
+nothing (Caleb Williams, 2026-10-12), and stamps `practice_status` on Questionable baselines (below).
+The crosscheck and the watchdog are advisory; the fallback only replaces a flat table.
+
+**Constants derived from ten seasons of nflverse data (F89, 2026-10-12, MAJOR).**
+`docs/audit/DERIVED_CONSTANTS_2026-10.md` holds every number and every rejection; `analysis/` holds the
+scripts that produced them (they need DuckDB, so they run in the any-given-stat environment, not this
+repo's pinned one). What changed in the engine: (1) a Questionable or Doubtful player now misses the
+CURRENT week with the measured probability (`GAME_STATUS_PLAY_PROBABILITY`; 0.739 / 0.016, by position,
+and for Questionable by the NFL practice report) -- a known absence, drawn once per simulated season, with
+measured persistence; `week_expectation` prices it too, and `_initial_absence_clock` gives the OLD
+answer (healthy, no RNG) when called without a position; (2) Sleeper's week-specific projection already
+holds ~71% of the game environment, so the baseline is made environment-neutral at load before the one
+full implied-total ratio is applied (`ENV_SHARE_IN_PROJECTION`, UNVERIFIED beyond four weeks of one
+season -- `scripts.env_check` re-measures it; 0 restores the old behaviour); (3) LB/DB onset rates, the TE
+vacated-volume capture and the bottom-defence bonus. Measured and REJECTED (do not re-propose without new
+evidence): any-given-stat's defence rating as the tier source, a snap-share role signal, and "unprojected
+means out". The `Questionable` DISPLAY flag and `INITIAL_ABSENCE_STATUSES` are unchanged.
 
 ## Rules of engagement
 

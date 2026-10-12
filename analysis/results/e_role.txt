@@ -1,0 +1,8 @@
+player-weeks (played, projected >= 4, >= 2 prior games): 402 weeks [3, 4, 5]
+mean residual (actual - Sleeper) among players who played: +0.45  [conditioning on playing biases this upward]
+all       n= 402  residual pts per +1.0 share-trend:   -0.99 (se 2.34)   relative: -0.019 (se 0.224)   sd(signal)=0.148
+offense   n= 313  residual pts per +1.0 share-trend:   -0.67 (se 2.50)   relative: +0.036 (se 0.224)   sd(signal)=0.162
+IDP       n=  89  residual pts per +1.0 share-trend:   -3.33 (se 7.62)   relative: -0.528 (se 0.915)   sd(signal)=0.082
+RB/WR/TE  n= 274  residual pts per +1.0 share-trend:   +1.70 (se 2.72)   relative: +0.184 (se 0.252)   sd(signal)=0.161
+  bottom quintile (role shrinking)   n=80 mean signal -0.182  mean residual +0.87  rel +0.059
+  top quintile (role growing)        n=80 mean signal +0.212  mean residual +0.45  rel +0.052

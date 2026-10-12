@@ -89,3 +89,4 @@ _site/
 # OF REAL NAMES -- committing it would be the leak the scanner exists to prevent.
 # tests/test_real_name_scan pins this line.
 .real_name_scan_allow
+analysis/*.duckdb

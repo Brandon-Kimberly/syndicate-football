@@ -126,7 +126,8 @@ class TestInitialInjuryState(unittest.TestCase):
     def setUpClass(cls):
         np.random.seed(7)
         cls.ir = InjuryLeague("IR")
-        cls.q_off_ir = InjuryLeague("Questionable")
+        cls.q_off_ir = InjuryLeague("Questionable", sims=60)
+        cls.d_off_ir = InjuryLeague("Doubtful", sims=20)
         cls.q_on_ir = InjuryLeague("Questionable", on_ir=True)
 
     def test_a_player_on_ir_does_not_start_the_season_healthy(self):
@@ -145,12 +146,27 @@ class TestInitialInjuryState(unittest.TestCase):
             for a, b in zip(seq, seq[1:]):
                 self.assertEqual(b, max(0, a - 1), msg="clock sequence %r" % (seq,))
 
-    def test_questionable_off_the_ir_slot_starts_healthy(self):
-        """No game-time-probability source, so Questionable / Doubtful off the IR slot are
-        drawn healthy (AUDIT_PLAN F4: a decision, not an oversight)."""
+    def test_questionable_off_the_ir_slot_misses_the_week_at_the_measured_rate(self):
+        """Was "no game-time-probability source, so Questionable / Doubtful off the IR slot are drawn
+        healthy" (AUDIT_PLAN F4). 2026-10-12: the source exists (nflverse reports x snap counts,
+        2016-2025: a Questionable RB plays 71.7%, a Doubtful player 1.6% -- DERIVED_CONSTANTS_2026-10.md)
+        and the engine uses it. The OUT_PLAYER is an RB. Each simulated season either has him on a
+        clock and out of the first week's lineup, or healthy and a candidate -- never both -- and the
+        share of seasons he misses is the measured one (60 seasons: ~17 expected, loose bounds)."""
+        absent = 0
         for clocks, cands in zip(self.q_off_ir.first_week_clocks, self.q_off_ir.first_week_candidates):
-            self.assertEqual(clocks.get(OUT_PLAYER, 0), 0)
-            self.assertIn(OUT_PLAYER, cands)
+            if clocks.get(OUT_PLAYER, 0) > 0:
+                absent += 1
+                self.assertNotIn(OUT_PLAYER, cands)
+            else:
+                self.assertIn(OUT_PLAYER, cands)
+        n = len(self.q_off_ir.first_week_clocks)
+        self.assertEqual(n, 60)
+        self.assertTrue(4 <= absent <= 32, "absent in %d of %d seasons (expected ~%.0f)" % (absent, n, 0.283 * n))
+
+    def test_doubtful_off_the_ir_slot_almost_always_misses_the_week(self):
+        absent = sum(1 for clocks in self.d_off_ir.first_week_clocks if clocks.get(OUT_PLAYER, 0) > 0)
+        self.assertGreaterEqual(absent, len(self.d_off_ir.first_week_clocks) - 3)
 
     def test_the_league_ir_slot_is_absent_regardless_of_status(self):
         """on_ir dominates: a Questionable player the manager parked on IR is out (the named,
@@ -162,7 +178,7 @@ class TestInitialInjuryState(unittest.TestCase):
     def test_the_rest_of_the_roster_starts_healthy(self):
         """With onset rates at 0, nobody else is on a clock in the first week -- the initial
         state is the only absence source here."""
-        for league in (self.ir, self.q_off_ir, self.q_on_ir):
+        for league in (self.ir, self.q_off_ir, self.d_off_ir, self.q_on_ir):
             for clocks in league.first_week_clocks:
                 others = {p: c for p, c in clocks.items() if c > 0 and p != OUT_PLAYER}
                 self.assertEqual(others, {})

@@ -1,0 +1,5 @@
+rostered Questionable (final designation), weeks 3-4: n=30
+  played 19 (63%); started 13 (43%)
+  did not play: 11  -> of those, in a STARTED lineup (locked zero): 0; benched: 11
+  P(started | Questionable & did not play) = 0.00   P(started | Questionable & played) = 0.68
+  practice_participation populated for: 0 of 30

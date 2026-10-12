@@ -54,6 +54,26 @@ def availability_findings(rosters, baselines, week, ags_players=None):
     return out
 
 
+def annotate_practice(baselines, ags_players, week):
+    """Stamp `practice_status` ('full' | 'limited' | 'dnp') on a rostered-or-not baseline whose Sleeper
+    status is Questionable when the NFL report for THIS week says Questionable too and names the
+    practice: the engine's availability table for a Questionable player depends on it
+    (SIM_CONFIG['QUESTIONABLE_PLAY_PROBABILITY_BY_PRACTICE']). Anything else is left unannotated, and a
+    stale stamp from an earlier sync is removed -- an old practice report must never price a new week.
+    Returns how many baselines were stamped."""
+    n = 0
+    for b in (baselines or {}).values():
+        if not isinstance(b, dict):
+            continue
+        b.pop("practice_status", None)
+        a = (ags_players or {}).get(str(b.get("player_id")))
+        if (a and b.get("injury_status") == "Questionable" and a.get("status") == "Questionable"
+                and a.get("week") == week and a.get("practice") in ("full", "limited", "dnp")):
+            b["practice_status"] = a["practice"]
+            n += 1
+    return n
+
+
 def write_availability_watch(path, rosters, baselines, week, ags_report=None, now=None):
     findings = availability_findings(rosters, baselines, week, (ags_report or {}).get("players"))
     doc = {"_meta": {"week": int(week), "ags_used": ags_report is not None,

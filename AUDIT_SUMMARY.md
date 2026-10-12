@@ -33,7 +33,7 @@ landed (2026-09-01). **Golden master:** three scenarios
 | F3 | 1 prerequisite | 2 | 0 | 0 | 0 |
 | **phase-era total** | **~46 findings** | **33 fixed** | **2** | **5 open, all tracked with numeric criteria** | **8 reported** |
 | F9–F35 (2026-08-30 → 09-03; see the F9–F35 section below) | 27 | 11 fixed / built | 6 measured & cleared | 10 open, tracked | 0 |
-| **grand total** | **~129 findings and tracked follow-ups** | **94 fixed or built** | — | open set enumerated in the table below | — |
+| **grand total** | **~130 findings and tracked follow-ups** | **95 fixed or built** | — | open set enumerated in the table below | — |
 
 "Open" means tracked with an acceptance criterion and a stated blocker.
 Fixed defects were verified by tests that failed against the old behaviour. Where a fix
@@ -399,6 +399,15 @@ than "fixed": the measurement said the code was right.
   bids only, but every 2025 bid placed has median 4 / mean 7.46 against the winners' 4 / 7.35:
   cleared, nothing to refit. Open: the bid ledger can now resolve losses and rival bids
   automatically.
+- **F89** constants derived from ten seasons of nflverse data — RESOLVED (MAJOR): the engine
+  drew Questionable and Doubtful players healthy (they play 73.9% and 1.6% of the time, n =
+  6035 / 643; the practice report moves Questionable 0.51-0.91) and B4's "Sleeper already
+  discounts" premise was false (1.03x, n = 39). Sleeper's week-specific projection already
+  holds ~71% of the game environment, which the engine then applied in full (slope 0.290, se
+  0.185, n = 541). LB/DB onset hazards, TE vacated-volume capture and the bottom-defence
+  bonus moved to measured values. Rejected on evidence: any-given-stat's defence rating (ties
+  the engine's), a snap-share role signal (null), "unprojected means out" (67.5% played).
+  `docs/audit/DERIVED_CONSTANTS_2026-10.md`; scripts in `analysis/`.
 - **F87** the union-merge list went stale because nothing guarded it — RESOLVED:
   `.gitattributes` gave `merge=union` to four append-only logs on 2026-09-04, each verified
   against its readers; every log added since was not, because no test checked. `evaluate-moves`
