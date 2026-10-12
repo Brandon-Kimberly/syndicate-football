@@ -18,7 +18,7 @@ requirements.txt`). On this machine plain `python` resolves to the retired Windo
 access violation in the test process (`AUDIT_PLAN.md` R1). Use the launcher:
 
 ```bash
-py -3.10 -m unittest discover tests      # full suite — 2346 tests, must all pass
+py -3.10 -m unittest discover tests      # full suite — 2384 tests, must all pass
 py -3.10 -m tests.test_golden_master     # reproducibility harness — 15 tests, three scenarios, byte-exact
 py -3.10 -m tests.golden_sync            # sync-stage golden: baseline generation from pinned inputs (--regenerate = MAJOR)
 py -3.10 -m scripts.run_behavior_check   # sim mechanic rates vs real 2025 + drift vs committed baseline
@@ -52,6 +52,7 @@ py -3.10 -m scripts.build_public_site    # the public site (static simple view, 
 py -3.10 -m scripts.readme_shots         # retake the README screenshots; REQUIRED after any template/render.py change (docs guard)
 py -3.10 -m scripts.banked_scores        # past weeks as the league BANKED them (settings then in force + commissioner overrides), checked to the cent; --write
 py -3.10 -m scripts.capture_scoreboard   # record ESPN's live scoreboard (UI-M5's data); the scoreboard-capture workflow runs it on Sundays
+py -3.10 -m scripts.availability_watch   # who the engine may be mis-pricing: carried baselines for unprojected players + the any-given-stat injury report vs Sleeper (advisory)
 py -3.10 -m scripts.season_movie        # the season as GIFs (wins/points banked, title+playoff odds); real names under data/, --fictional to share
 py -3.10 -m scripts.streamer_study       # C5: BASE_STREAMER_MEANS vs the live free-agent pool (measurement only; changing it is MAJOR)
 py -3.10 -m webui                        # local web UI (docs/WEB_UI.md): 127.0.0.1 only; never imports the engine, never chdirs;
@@ -114,6 +115,22 @@ hand-typed entry still wins and is how to express any non-zero judgment; the ent
 equal the roster's or the gate blocks; a cap of 0 restores the old abort. A canonical run's row
 now survives a push race (`commit_and_push_logs` rebases and retries); if a run ever reports
 "LOGS PUSH ... committed locally", the row is in that run's `site-data` artifact.
+
+**Second data sources (2026-10-12).** The Odds API is capped and can be unavailable, so
+`nflverse/nfldata`'s `games.csv` (free; this week's and next week's total and spread) backs it up:
+with no key, a rejected or exhausted key, a hold below the credit reserve, a failed request or an
+empty payload, the sync writes `fallback_nflverse_lines` (real totals and opponents, no weather)
+instead of the flat 21.5 table, and the canonical gate ACCEPTS that source (the flat fallbacks
+still block; the row's provenance keeps `vegas_source`). Real Odds lines already on disk for the
+week still win. When the Odds fetch succeeds, teams its payload left out (a finished game drops out
+of the feed -- DAL and TB, 2026-10-11) are filled from nflverse and named in `_meta.patched_from_nflverse`,
+and implied totals that differ by more than `LINES_CROSSCHECK_PTS` are warned (`LINES CROSSCHECK`,
+benign to the gate; the Odds line is still used). Only a sync that passes a budget does any of this.
+The any-given-stat site's published injury feed (`clients/ags.py`: refused unless `data_version` is
+known and under 48 h old; any failure = no second opinion, logged at INFO) feeds
+`availability_watch.json`, which also flags carried baselines for players Sleeper projects at
+nothing (Caleb Williams, 2026-10-12). Both are ADVISORY or fallback-only: no draw moves when the
+Odds API works. The model fixes that would act on them are HELD (the held-fixes memory).
 
 ## Rules of engagement
 

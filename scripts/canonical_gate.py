@@ -36,6 +36,8 @@ BENIGN_MARKERS = (
     "use the anonymous defaults",
     "DEPTH WATCHDOG:",
     "covered by KNOWN_MISSING_ASSETS",   # whitelisted zero-projection: engine imputes cleanly
+    "using nflverse's published lines",  # Odds API unavailable; real lines from nflverse instead of the flat table (2026-10-12)
+    "LINES CROSSCHECK",                  # Odds vs nflverse implied totals differ: reported for a human, the Odds line is still used
     "AUTO-ZERO",                         # within AUTO_ZERO_IMPUTE_MAX: valued at Sleeper's own zero, loud, bounded (2026-10-11)
     # A team with no market line takes the flat 21.5 / no-opponent fallback. This fires
     # BY DESIGN at every Sunday and Tuesday quote (a completed game has no live line) and
@@ -67,7 +69,12 @@ BLOCKING_MARKERS = (
     ("ESPN BLEND", "espn"),
 )
 
-VEGAS_REAL_SOURCES = ("odds_api", "week1_verified_table")
+# `fallback_nflverse_lines` (2026-10-12): the Odds API was unavailable and nflverse's published
+# lines (real market lines, no weather) were used instead of the flat 21.5 table. It is accepted
+# so a quota or key failure cannot cost a canonical window again; the row's provenance still
+# records `vegas_source`, so a row built on it is never mistaken for an Odds API row. The flat
+# fallbacks (no key / api error / empty payload / credit reserve) still block, test-pinned.
+VEGAS_REAL_SOURCES = ("odds_api", "week1_verified_table", "fallback_nflverse_lines")
 
 # The unrostered-pool floor (2026-09-04): a partial projection fetch that silently drops
 # FREE-AGENT players thins the pool, shifts replacement levels, and moves every VORP
