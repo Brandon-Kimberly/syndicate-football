@@ -1052,6 +1052,24 @@ def write_idp_projections(projections, players_db, scoring, week, fallback_seaso
                      type(ex).__name__, ex)
 
 
+def carried_zero_warning(name, pos, team, status, on_ir, source, mean, week, bye_week):
+    """The BASELINES warning for a rostered player whose Sleeper projection is zero, and whose
+    carried mean stands in for his healthy-week expectation. A player whose team is on bye this
+    week has no game, so the zero is correct; the text says so instead of implying an injury
+    concern. The '; CARRIED ' marker is what canonical_gate classifies as benign, so it stays."""
+    carried_from = "the previous sync's baseline" if source == "carried_prior" else "the projection log's last"
+    if bye_week is not None and bye_week == week:
+        return (f"BASELINES: rostered player {name!r} ({pos}, {team}) has a zero Sleeper projection "
+                f"because {team} is on BYE in week {week} (no game, so the zero is correct); "
+                f"CARRIED {carried_from} mean {mean:.2f} as his healthy-week expectation "
+                f"(he does not play this week).")
+    return ("BASELINES: rostered player %r (%s, %s) has a zero/empty Sleeper projection "
+            "(injury_status=%s, on_ir=%s); CARRIED %s mean %.2f as his healthy-week "
+            "expectation. He enters the engine through F4's absence handling if his "
+            "status warrants it, not at full strength." % (
+                name, pos, team, status, on_ir, carried_from, mean))
+
+
 def generate_player_baselines(league_scoring_settings, players_db, live_rosters, current_year="2026", week=1,
                               rostered_pids=None, byes=None, reserve_pids=None, keep_idp=False):
     existing_baselines = {}
@@ -1229,14 +1247,9 @@ def generate_player_baselines(league_scoring_settings, players_db, live_rosters,
                         "on_ir": str(pid) in (reserve_pids or ()),
                         "projection_source": source,
                     }
-                    logging.warning(
-                        "BASELINES: rostered player %r (%s, %s) has a zero/empty Sleeper projection "
-                        "(injury_status=%s, on_ir=%s); CARRIED %s mean %.2f as his healthy-week "
-                        "expectation. He enters the engine through F4's absence handling if his "
-                        "status warrants it, not at full strength.",
+                    logging.warning("%s", carried_zero_warning(
                         name, raw_pos, team, player.get("injury_status"), str(pid) in (reserve_pids or ()),
-                        "the previous sync's baseline" if source == "carried_prior" else "the projection log's last",
-                        carried_mean)
+                        source, carried_mean, week, (byes or {}).get(team)))
                     continue
                 # No prior either: the engine aborts on him unless KNOWN_MISSING_ASSETS carries
                 # a hand-typed entry. That used to happen silently, and the only signal was

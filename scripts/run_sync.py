@@ -22,6 +22,7 @@ pre-rotation value long after `setx` updated it. Only a rejected key stops -- a 
 timeout is a transient and must never block the scheduled runner, and an absent key is the
 documented no-key path.
 """
+import argparse
 import sys
 
 from fantasy_sim.config import ODDS_API_KEY
@@ -29,10 +30,15 @@ from fantasy_sim.sync import should_stop_for_odds_key, sync_all, verify_odds_key
 
 
 def main(argv=None):
-    argv = list(sys.argv[1:] if argv is None else argv)
-    sharp = "--sharp" in argv
-    allow_fallback = "--allow-fallback" in argv
-    official = "--official" in argv
+    # Parsed BEFORE anything else. Unknown flags are rejected (exit 2) and --help exits 0, so
+    # neither can fall through to a sync. A sync writes data/current and appends to the logs; a
+    # typo or a `--help` must never start one (2026-10-12: `--help` ran a full sync).
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--sharp", action="store_true")
+    ap.add_argument("--allow-fallback", action="store_true", dest="allow_fallback")
+    ap.add_argument("--official", action="store_true")
+    args = ap.parse_args(sys.argv[1:] if argv is None else list(argv))
+    sharp, allow_fallback, official = args.sharp, args.allow_fallback, args.official
 
     verdict, detail = verify_odds_key(ODDS_API_KEY)
     if verdict != "ok":
