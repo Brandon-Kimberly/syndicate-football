@@ -8,8 +8,8 @@ authors:
 repository-code: "https://github.com/Brandon-Kimberly/syndicate-football"
 url: "https://brandon-kimberly.github.io/syndicate-football/"
 license: MIT
-version: 11.0.0
-date-released: "2026-10-12"
+version: 11.1.0
+date-released: "2026-10-13"
 keywords:
   - monte-carlo
   - sports-analytics

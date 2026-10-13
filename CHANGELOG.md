@@ -5,6 +5,17 @@ in it, audit counts, hardware/season blockers, backlog, and what the tag does *n
 claim) live on the linked release. MAJOR means the model's predictions changed
 materially (see the release policy in `CLAUDE.md`).
 
+## [v11.1.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v11.1.0) — 2026-10-13 (MINOR)
+
+**The forecast gets a scorecard that writes itself, and the sync stops three quiet hazards.** A
+league-wide accuracy read (`scripts.forecast_accuracy`) now records the canonical pre-kickoff
+quotes against banked results every day from the data-capture workflow, appending only when a
+number moves. The sync's carried-zero warning says when a bye explains the zero, and keeps an
+injury status a bye does not erase. `run_sync` no longer runs a sync on `--help` or on an
+unknown or abbreviated flag. The model is unchanged: the goldens are byte-identical, and the
+engine's only edit is a comment marking the game-script multipliers unverified. The suite goes
+2428 → 2454.
+
 ## [v11.0.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v11.0.0) — 2026-10-12 (MAJOR)
 
 **Ten seasons of nflverse data replace guesses, and two things the engine had wrong turn out to
