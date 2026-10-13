@@ -620,6 +620,12 @@ class FantasySimulationEngine:
         if v_opp in top_def and p_pos == 'RB': script_mult -= top_pen
         elif v_opp in bottom_def and p_pos == 'RB': script_mult += bot_bonus
 
+        # UNVERIFIED (carried over, 2026-10-12): the +0.15 / -0.10 RB spread effect and the
+        # +0.10 pass-catcher effect below have no measured source. They are not in config.py,
+        # and no audit measurement sizes them (AUDIT_PLAN's game-script work measured QB/WR
+        # correlation, not these means). They also fire on the same favourite games the
+        # environment ratio already rewards, so they are the first suspects when a team's
+        # quote runs high (docs/audit/FORECAST_WATCH.md). Changing them is a MAJOR.
         if v_spr <= -5.5:
             if p_pos == 'RB': script_mult += 0.15
             elif p_pos in ['DL', 'DEF']: script_mult += 0.10
