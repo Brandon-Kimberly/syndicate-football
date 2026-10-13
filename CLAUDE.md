@@ -334,3 +334,13 @@ came from asking a property question rather than reading code linearly.
 
 Work one phase per session. Record findings as you go. Do not start Phase 8 (engineering /
 decomposition) before Phase 0 (reproducibility harness) is complete.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `Brandon-Kimberly/syndicate-football`, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root. See `docs/agents/domain.md`.
