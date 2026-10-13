@@ -28,6 +28,29 @@ def _load_rows(path):
         return [json.loads(line) for line in f if line.strip()]
 
 
+def week_line(rows, banked, kickoffs, week):
+    """(report line, {team: error}) for one week. Never guesses: with no kickoff time, no quote,
+    or no team in common with the banked result, the line says why and the errors are empty."""
+    kick = (kickoffs or {}).get(str(week))
+    if not kick:
+        return f"week {week}: no kickoff on record; not quoted", {}
+    rec = pre_kickoff_record(rows, week, min(kick))
+    if rec is None:
+        return f"week {week}: no canonical quote before kickoff", {}
+    block = (banked or {}).get(f"week_{week}")
+    if not block:
+        return (f"week {week}: quoted {rec['logged_at']} (commit {str(rec.get('commit'))[:7]}); "
+                "result pending"), {}
+    errs = team_errors(rec, {t: v["points"] for t, v in block.items()})
+    if not errs:
+        return f"week {week}: no team in common between the quote and the banked result", {}
+    s = summarise(errs)
+    line = (f"week {week}: quoted {rec['logged_at']} (commit {str(rec.get('commit'))[:7]})  "
+            f"n={s['n']} mean error {s['mean_error']:+.1f}  MAE {s['mae']:.1f}  "
+            f"rms z {s['rms_z']:.2f}  80% band {s['coverage80']:.0%}  50% band {s['coverage50']:.0%}")
+    return line, errs
+
+
 def main():
     rows = _load_rows(PREDICTIONS)
     kickoffs = _load_json(SCHEDULE).get("_meta", {}).get("kickoffs", {})
@@ -35,23 +58,10 @@ def main():
     weeks = sorted({int(r["week"]) for r in rows if r.get("record_type") == "week_predictions"})
     pooled = {}
     for w in weeks:
-        kick = min(kickoffs.get(str(w), ["9999"]))
-        rec = pre_kickoff_record(rows, w, kick)
-        actuals_block = banked.get(f"week_{w}")
-        if rec is None:
-            print(f"week {w}: no canonical quote before kickoff")
-            continue
-        if not actuals_block:
-            print(f"week {w}: quoted at {rec['logged_at']} (commit {str(rec.get('commit'))[:7]}); result pending")
-            continue
-        actuals = {t: v["points"] for t, v in actuals_block.items()}
-        errs = team_errors(rec, actuals)
-        s = summarise(errs)
-        print(f"week {w}: quoted {rec['logged_at']} (commit {str(rec.get('commit'))[:7]})  "
-              f"n={s['n']} mean error {s['mean_error']:+.1f}  MAE {s['mae']:.1f}  "
-              f"rms z {s['rms_z']:.2f}  80% band {s['coverage80']:.0%}  50% band {s['coverage50']:.0%}")
-        for t in sorted(errs):
-            pooled.setdefault(t, {}).update({w: errs[t]})
+        line, errs = week_line(rows, banked, kickoffs, w)
+        print(line)
+        for t, e in errs.items():
+            pooled.setdefault(t, {})[w] = e
     all_errs = {f"{t}|{w}": e for t, per in pooled.items() for w, e in per.items()}
     if all_errs:
         p = summarise(all_errs)

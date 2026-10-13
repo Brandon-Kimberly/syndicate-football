@@ -1059,8 +1059,11 @@ def carried_zero_warning(name, pos, team, status, on_ir, source, mean, week, bye
     concern. The '; CARRIED ' marker is what canonical_gate classifies as benign, so it stays."""
     carried_from = "the previous sync's baseline" if source == "carried_prior" else "the projection log's last"
     if bye_week is not None and bye_week == week:
+        # A bye explains the zero, but it does not erase an injury status: an Out or IR player on a
+        # bye team still needs his status in the warning.
+        status_part = "" if (status is None and not on_ir) else f" (injury_status={status}, on_ir={on_ir})"
         return (f"BASELINES: rostered player {name!r} ({pos}, {team}) has a zero Sleeper projection "
-                f"because {team} is on BYE in week {week} (no game, so the zero is correct); "
+                f"because {team} is on BYE in week {week} (no game, so the zero is correct){status_part}; "
                 f"CARRIED {carried_from} mean {mean:.2f} as his healthy-week expectation "
                 f"(he does not play this week).")
     return ("BASELINES: rostered player %r (%s, %s) has a zero/empty Sleeper projection "

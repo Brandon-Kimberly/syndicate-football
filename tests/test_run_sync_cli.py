@@ -38,5 +38,15 @@ class RunSyncArguments(unittest.TestCase):
         sync.assert_called_once_with(sharp_polling=False, official=False)
 
 
+
+class NoAbbreviations(unittest.TestCase):
+    def test_prefix_of_a_flag_is_rejected_not_expanded(self):
+        # argparse expands unique prefixes by default: --off would silently mean --official,
+        # which spends the odds reserve. A prefix must be refused.
+        code, sync = RunSyncArguments()._run(["--off"])
+        self.assertNotEqual(code, 0)
+        sync.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

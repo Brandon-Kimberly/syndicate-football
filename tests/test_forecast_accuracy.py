@@ -75,5 +75,32 @@ class Summary(unittest.TestCase):
         self.assertIsNone(fa.summarise({})["mean_error"])
 
 
+
+import scripts.forecast_accuracy as fas  # noqa: E402
+
+
+class WeekLine(unittest.TestCase):
+    def setUp(self):
+        self.rows = [_row(1, "2026-09-09T10:00Z", True, {"Alpha": (100.0, 20.0)})]
+
+    def test_week_without_a_kickoff_is_not_quoted(self):
+        # A missing kickoff must NOT make every canonical row count as pre-kickoff.
+        line, errs = fas.week_line(self.rows, {"week_1": {"Alpha": {"points": 110.0}}}, {}, 1)
+        self.assertEqual(errs, {})
+        self.assertIn("no kickoff", line)
+
+    def test_week_with_no_shared_team_names_does_not_crash(self):
+        line, errs = fas.week_line(self.rows, {"week_1": {"Beta": {"points": 110.0}}},
+                                   {"1": ["2026-09-10T00:20Z"]}, 1)
+        self.assertEqual(errs, {})
+        self.assertIn("no team", line)
+
+    def test_normal_week_reports_the_numbers(self):
+        line, errs = fas.week_line(self.rows, {"week_1": {"Alpha": {"points": 110.0}}},
+                                   {"1": ["2026-09-10T00:20Z"]}, 1)
+        self.assertIn("mean error +10.0", line)
+        self.assertEqual(set(errs), {"Alpha"})
+
+
 if __name__ == "__main__":
     unittest.main()

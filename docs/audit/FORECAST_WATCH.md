@@ -24,11 +24,13 @@ because a sample size has been shown to separate signal from noise.
 
 - **Calibration.** Pooled 80% band coverage should sit between 75% and 85% once there are at
   least 40 team-weeks. Above 90% for two checks in a row means the intervals are too wide.
-  Current (32 team-weeks): 94%. Current 50% band: 56%.
+  As of week 5 (40 team-weeks, `scripts.forecast_accuracy`): 80% band 92%, 50% band 60%.
 - **A team is a problem** only if its mean error through week 11 is more than two standard
   errors from zero (SE = sd of its weekly errors / sqrt(n)), *and* the per-player breakdown
   shows the environment/script multipliers drive the gap. A mean that is merely large is not
-  enough: five weeks gave a standard error of about 13.5 points for the Quantum Ferrets.
+  enough. For the Quantum Ferrets over five weeks the weekly error sd is about 30 points, which
+  puts the standard error of the 5-week mean near 13.5. That figure was a scratch calculation;
+  the tool prints the mean but not the standard error yet.
 - **The multiplier question** (`fantasy_sim/simulation.py`, `_script_multiplier`) is tested
   only by the per-player logs from v11 onward. If favoured-team running backs keep coming in
   well below their multiplied expectation over at least six weeks, the +0.15 RB bonus gets a
@@ -36,7 +38,6 @@ because a sample size has been shown to separate signal from noise.
 
 ## Known gaps
 
-- The week-5 Vegas lines were stale for 28 of 32 teams. Until the next sync uses real lines,
-  the per-player multipliers for those teams cannot be trusted.
-- Week 5 is not yet in `banked_scores.json`; the Sleeper matchup fetch used to check it was
-  not written to the repo.
+- The week-5 Vegas lines were stale for 28 of 32 teams. The 2026-10-12 sync refreshed week 6
+  (28 of 32 real lines; CIN, DET, MIA, MIN are on bye and have no game). Week 5's stale-line
+  replay is not reproducible from the repo, because `data/current` is overwritten each sync.

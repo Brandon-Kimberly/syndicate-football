@@ -35,5 +35,15 @@ class CarriedZeroWarning(unittest.TestCase):
         self.assertIn("if his status warrants it", text)
 
 
+
+class BuyeWeekKeepsStatus(unittest.TestCase):
+    def test_out_player_on_bye_keeps_his_status(self):
+        text = carried_zero_warning(name="Delta Back", pos="RB", team="DDD", status="Out",
+                                    on_ir=False, source="carried_prior", mean=7.0,
+                                    week=6, bye_week=6)
+        self.assertIn("BYE", text)
+        self.assertIn("injury_status=Out", text)
+
+
 if __name__ == "__main__":
     unittest.main()

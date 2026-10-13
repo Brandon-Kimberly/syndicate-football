@@ -33,7 +33,9 @@ def main(argv=None):
     # Parsed BEFORE anything else. Unknown flags are rejected (exit 2) and --help exits 0, so
     # neither can fall through to a sync. A sync writes data/current and appends to the logs; a
     # typo or a `--help` must never start one (2026-10-12: `--help` ran a full sync).
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    # allow_abbrev=False: argparse would otherwise read --off as --official (which spends the odds reserve).
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
+                                 allow_abbrev=False)
     ap.add_argument("--sharp", action="store_true")
     ap.add_argument("--allow-fallback", action="store_true", dest="allow_fallback")
     ap.add_argument("--official", action="store_true")
