@@ -57,3 +57,7 @@ data/logs/streamer_levels.jsonl merge=union
 #                          force, so a duplicate from a union merge changes nothing; pinned by
 #                          tests.test_banked_scores
 data/logs/scoring_settings.jsonl merge=union
+#   forecast_accuracy   -- one record per week-state change, appended by data-capture (2026-10-13).
+#                          Its only reader is scripts.forecast_accuracy, which keeps the last line;
+#                          a duplicate from a union merge repeats a record already written.
+data/logs/forecast_accuracy_*.jsonl merge=union

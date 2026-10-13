@@ -9,12 +9,16 @@ the bar is set before the evidence that would test it.
   (`median[team].expected_total`, with `sd_total` for the band).
 - **Result:** the banked points for that team (`data/current/banked_scores.json`).
 - **Tool:** `py -3.10 -m scripts.forecast_accuracy`. Read-only; prints the league line, the
-  per-week lines and the pooled team-week line. It writes nothing.
+  per-week lines and the pooled team-week line. It writes nothing unless `--record` is given.
+- **Record:** `--record` appends one line to `data/logs/forecast_accuracy_<season>.jsonl`, and
+  only when a scored number has changed. The daily `data-capture` workflow runs it after the
+  sync and commits the log, so the season's accuracy history builds without anyone running it.
 
 ## Routine
 
-1. After each week's banked scores land, run `scripts.forecast_accuracy`.
-2. Record the pooled line and the per-team means in the weekly notes.
+1. Automated: the daily `data-capture` workflow runs `scripts.forecast_accuracy --record`.
+   Nothing to run by hand. Check the log's last line after each week's results.
+2. Review the pooled line and the per-team means at each milestone (below).
 3. Milestone reviews at weeks 6, 11 and 15 (the points the release policy already uses).
 
 ## Proposed bar (for the owner to confirm)

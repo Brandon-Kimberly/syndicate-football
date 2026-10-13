@@ -1,21 +1,33 @@
 """Forecast accuracy: how the canonical pre-kickoff quotes did against the banked results.
 
-    py -3.10 -m scripts.forecast_accuracy
+    py -3.10 -m scripts.forecast_accuracy            # print the report (read-only)
+    py -3.10 -m scripts.forecast_accuracy --record   # also append to data/logs/forecast_accuracy_<season>.jsonl
 
-Read-only: it reads data/logs/predictions_2026.jsonl, data/current/nfl_schedule.json and
-data/current/banked_scores.json, prints a report, and writes nothing. A week with no banked
-result yet is listed as pending, not guessed. Run it after each week's banked scores land; the
-pooled line is the number to watch across the season (see docs/audit/FORECAST_WATCH.md)."""
+Reads data/logs/predictions_2026.jsonl, data/current/nfl_schedule.json and
+data/current/banked_scores.json. Without --record it writes nothing. With --record it appends one
+line, and only when a scored number has changed since the last line, so the daily data-capture
+workflow can run it without filling the log. A week with no banked result is reported as pending,
+never guessed. See docs/audit/FORECAST_WATCH.md."""
+import argparse
+import datetime
 import json
 import os
 import sys
+from collections import Counter
 
-from fantasy_sim.forecast_accuracy import pre_kickoff_record, summarise, team_errors
+from fantasy_sim.forecast_accuracy import append_if_changed, build_record, summarise, week_result
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PREDICTIONS = os.path.join(ROOT, "data", "logs", "predictions_2026.jsonl")
 SCHEDULE = os.path.join(ROOT, "data", "current", "nfl_schedule.json")
 BANKED = os.path.join(ROOT, "data", "current", "banked_scores.json")
+RECORD_DIR = os.path.join(ROOT, "data", "logs")
+
+_REASON = {
+    "no_kickoff": "no kickoff on record; not quoted",
+    "no_quote": "no canonical quote before kickoff",
+    "no_overlap": "no team in common between the quote and the banked result",
+}
 
 
 def _load_json(path):
@@ -29,29 +41,25 @@ def _load_rows(path):
 
 
 def week_line(rows, banked, kickoffs, week):
-    """(report line, {team: error}) for one week. Never guesses: with no kickoff time, no quote,
-    or no team in common with the banked result, the line says why and the errors are empty."""
-    kick = (kickoffs or {}).get(str(week))
-    if not kick:
-        return f"week {week}: no kickoff on record; not quoted", {}
-    rec = pre_kickoff_record(rows, week, min(kick))
-    if rec is None:
-        return f"week {week}: no canonical quote before kickoff", {}
-    block = (banked or {}).get(f"week_{week}")
-    if not block:
-        return (f"week {week}: quoted {rec['logged_at']} (commit {str(rec.get('commit'))[:7]}); "
-                "result pending"), {}
-    errs = team_errors(rec, {t: v["points"] for t, v in block.items()})
-    if not errs:
-        return f"week {week}: no team in common between the quote and the banked result", {}
-    s = summarise(errs)
-    line = (f"week {week}: quoted {rec['logged_at']} (commit {str(rec.get('commit'))[:7]})  "
+    """(report line, {team: error}) for one week, formatted from week_result."""
+    r = week_result(rows, banked, kickoffs, week)
+    if r["status"] in _REASON:
+        return f"week {week}: {_REASON[r['status']]}", {}
+    if r["status"] == "pending":
+        return (f"week {week}: quoted {r['quote_logged_at']} (commit {r['commit']}); result pending"), {}
+    s = summarise(r["errors"])
+    line = (f"week {week}: quoted {r['quote_logged_at']} (commit {r['commit']})  "
             f"n={s['n']} mean error {s['mean_error']:+.1f}  MAE {s['mae']:.1f}  "
             f"rms z {s['rms_z']:.2f}  80% band {s['coverage80']:.0%}  50% band {s['coverage50']:.0%}")
-    return line, errs
+    return line, r["errors"]
 
 
-def main():
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--record", action="store_true",
+                    help="append to data/logs/forecast_accuracy_<season>.jsonl when a scored number changed")
+    args = ap.parse_args(sys.argv[1:] if argv is None else list(argv))
+
     rows = _load_rows(PREDICTIONS)
     kickoffs = _load_json(SCHEDULE).get("_meta", {}).get("kickoffs", {})
     banked = _load_json(BANKED)
@@ -72,6 +80,15 @@ def main():
             per = pooled[t]
             mean = sum(e["error"] for e in per.values()) / len(per)
             print(f"  {t:18s} {mean:+7.1f}  over {len(per)} wk")
+
+    if args.record:
+        season = Counter(str(r.get("season")) for r in rows if r.get("season")).most_common(1)[0][0]
+        now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        record = build_record(season, rows, banked, kickoffs, generated_at=now)
+        path = os.path.join(RECORD_DIR, f"forecast_accuracy_{season}.jsonl")
+        wrote = append_if_changed(path, record)
+        print(f"\nrecord: {'appended to' if wrote else 'unchanged, nothing written to'} "
+              f"{os.path.relpath(path, ROOT)}")
     return 0
 
 
