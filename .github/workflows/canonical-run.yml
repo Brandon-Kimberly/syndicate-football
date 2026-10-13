@@ -15,8 +15,10 @@
 # windows-latest on purpose: the platform every audited number was produced on; CI
 # already proves the suite and byte-exact goldens there. Fire times sit hours inside
 # each window in BOTH DST regimes (width over offsets, as everywhere else):
-#   Sunday   11:30 + 12:30 + 14:30 UTC  vs deadline 17:00 (PDT) / 18:00 (PST); the
-#            11:30 fire also beats ~13:30 UTC international kickoffs
+#   Sunday   09:30 + 10:30 + 12:30 UTC  vs deadline 17:00 (PDT) / 18:00 (PST). Moved two
+#            hours earlier on 2026-10-13: measured schedule lag is 3-6h, not the ~1h this
+#            was designed against (tests/test_canonical_schedule.py). With that lag the first
+#            fire does NOT reliably beat a ~13:30 UTC international kickoff.
 #   Thursday 13:00 + 17:30 UTC  vs the usual ~00:20 Friday UTC kickoff
 #   Wednesday 13:00 UTC          self-selecting via the <=24h proceed gate: quiet skip
 #            on normal weeks, a real run only when the opener is Wednesday
@@ -31,11 +33,12 @@ on:
     - cron: "0 13 * * 3"
     - cron: "0 13 * * 4"
     - cron: "30 17 * * 4"
-    # Early-Sunday guard (2026-09-06): ~04:30 PT, comfortably ahead of ~06:30 PT
-    # international kickoffs; the 12:30 fire becomes the effective retry.
-    - cron: "30 11 * * 0"
+    # Sunday fires (moved 2h earlier 2026-10-13). GitHub starts these 3-6h after the cron
+    # time, so 09:30 lands about 12:30-15:40 UTC and 10:30 is the retry; 12:30 only helps in
+    # PST (deadline 18:00 UTC). All three sit after the window opens (08:00 UTC in PST).
+    - cron: "30 9 * * 0"
+    - cron: "30 10 * * 0"
     - cron: "30 12 * * 0"
-    - cron: "30 14 * * 0"
     - cron: "0 15 * * 2"
     - cron: "0 20 * * 2"
   workflow_dispatch:

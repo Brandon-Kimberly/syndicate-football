@@ -3435,6 +3435,12 @@ local/runner coexistence are free. Sunday worst case (1h cron lag + ~35 min wind
 runner) lands ~2.5h before the deadline in both DST regimes. windows-latest for
 platform consistency with everything CI proves.
 
+*Schedule, corrected 2026-10-13:* the 1h lag was an assumption. Measured over every
+scheduled canonical-run since 2026-09-04 (n=42) the start delay is median 3.1h, October
+median 3.5h, maximum 6.1h. Week 5's first Sunday fire started 18 minutes before the
+deadline. The Sunday fires moved two hours earlier (09:30/10:30/12:30 UTC) and
+`tests/test_canonical_schedule.py` now holds them to the measured lag.
+
 *Retention (owner delegated, decided):* NO orphan branch — ~800 MB/season of embed
 HTML would enter every future clone. Instead: 90-day artifacts cover the in-season
 horizon, the tracked predictions rows are the permanent model record, and the current
