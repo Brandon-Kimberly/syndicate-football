@@ -1309,3 +1309,4 @@
 {"injury_body_part": null, "injury_status": null, "name": "Jason Myers", "player_id": "2747", "practice_participation": null, "recorded_at": "2026-10-14T18:11:29Z", "team": "Turbo Llamas", "week": 6}
 {"injury_body_part": "Hamstring", "injury_status": "Questionable", "name": "Saquon Barkley", "player_id": "4866", "practice_participation": null, "recorded_at": "2026-10-14T18:11:29Z", "team": "Turbo Llamas", "week": 6}
 {"injury_body_part": "Ankle", "injury_status": "Doubtful", "name": "TreVeyon Henderson", "player_id": "12529", "practice_participation": null, "recorded_at": "2026-10-14T18:11:29Z", "team": "Turbo Llamas", "week": 6}
+{"injury_body_part": "Groin", "injury_status": "Questionable", "name": "Keenan Allen", "player_id": "1479", "practice_participation": null, "recorded_at": "2026-10-14T18:45:41Z", "team": "Polar Yetis", "week": 6}
