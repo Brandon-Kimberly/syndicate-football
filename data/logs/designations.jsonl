@@ -1325,3 +1325,12 @@
 {"injury_body_part": null, "injury_status": null, "name": "Jalen Coker", "player_id": "11646", "practice_participation": null, "recorded_at": "2026-10-15T17:43:01Z", "team": "Quantum Ferrets", "week": 6}
 {"injury_body_part": "Hamstring", "injury_status": "Questionable", "name": "Josh Downs", "player_id": "9500", "practice_participation": null, "recorded_at": "2026-10-15T17:43:01Z", "team": "Turbo Llamas", "week": 6}
 {"injury_body_part": "Ankle", "injury_status": "Questionable", "name": "TreVeyon Henderson", "player_id": "12529", "practice_participation": null, "recorded_at": "2026-10-15T17:43:01Z", "team": "Turbo Llamas", "week": 6}
+{"injury_body_part": null, "injury_status": null, "name": "Jayden Daniels", "player_id": "11566", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Crimson Marmots", "week": 6}
+{"injury_body_part": "Hamstring", "injury_status": "Questionable", "name": "Terry McLaurin", "player_id": "5927", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Iron Wombats", "week": 6}
+{"injury_body_part": "Toe", "injury_status": "Questionable", "name": "Zay Flowers", "player_id": "9997", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Iron Wombats", "week": 6}
+{"injury_body_part": "Shoulder", "injury_status": "Questionable", "name": "Jaylen Waddle", "player_id": "7526", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Neon Walruses", "week": 6}
+{"injury_body_part": null, "injury_status": null, "name": "Mansoor Delane", "player_id": "13385", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Polar Yetis", "week": 6}
+{"injury_body_part": "Ribs", "injury_status": "Questionable", "name": "Mike Evans", "player_id": "2216", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Polar Yetis", "week": 6}
+{"injury_body_part": null, "injury_status": null, "name": "Trey Hendrickson", "player_id": "4135", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Polar Yetis", "week": 6}
+{"injury_body_part": null, "injury_status": null, "name": "Budda Baker", "player_id": "4081", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Quantum Ferrets", "week": 6}
+{"injury_body_part": null, "injury_status": null, "name": "Dameon Pierce", "player_id": "8129", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Quantum Ferrets", "week": 6}
