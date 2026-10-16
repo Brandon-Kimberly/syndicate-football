@@ -132,6 +132,21 @@ def release_advice(latest_tag, goldens_changed_since_tag, week):
     return msgs
 
 
+def checkout_behind_note(behind):
+    """Pure: the warning the status tool prints when its checkout lags origin/main. `behind` is
+    the commit count, or None when git cannot answer. The canonical rows the runner commits land
+    on origin/main; a stale local log cannot see them, so a window the runner covered reads MISSED
+    here (2026-10-16: week 6 run1 was covered at 10:59 PT, read MISSED from 9 commits behind)."""
+    if behind == 0:
+        return None
+    if behind is None:
+        return ("NOTE: could not compare this checkout with origin/main; a MISSED here may be "
+                "a stale log -- fetch and compare before trusting it")
+    return (f"NOTE: this checkout is {behind} commit(s) behind origin/main, so its predictions log "
+            f"may predate a canonical row the runner already committed. A MISSED here may be stale: "
+            f"git pull, then read the report again")
+
+
 def _pt(dt):
     return dt.astimezone(PT)
 

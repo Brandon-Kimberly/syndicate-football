@@ -23,8 +23,8 @@ from datetime import datetime, timezone
 
 from fantasy_sim.freshness import check as freshness_check
 from fantasy_sim.run_windows import (
-    PT, compute_windows, load_kickoffs, parse_canonical_digest, release_advice,
-    stamps_from_predictions_rows,
+    PT, checkout_behind_note, compute_windows, load_kickoffs, parse_canonical_digest,
+    release_advice, stamps_from_predictions_rows,
 )
 from fantasy_sim.storage import decisions_week_path
 from scripts.windows_watch import read_predictions_rows
@@ -49,6 +49,18 @@ def _release_advice_live(week):
         log = git("log", "--oneline", f"{tag}..HEAD", "--", "tests/fixtures/golden/expected")
         changed = bool(log)
     return release_advice(tag, changed, week)
+
+
+def _behind_origin_live():
+    """How many commits origin/main has that this checkout lacks, as of the last fetch; None when
+    git cannot answer. Read-only: no fetch is made here."""
+    import subprocess
+    try:
+        out = subprocess.run(["git", "rev-list", "--count", "HEAD..origin/main"],
+                             capture_output=True, text=True, timeout=10)
+        return int(out.stdout.strip()) if out.returncode == 0 else None
+    except Exception:
+        return None
 
 
 def _local_digest_stamps(week):
@@ -122,6 +134,9 @@ def main(argv=None):
     print(f"\nCanonical run windows -- week {r['target_week']}  "
           f"(now {pt_now.strftime('%a %Y-%m-%d %H:%M %Z')}; kickoffs from {kick_source})")
     print(f"  freshness: {status}" + (f" -- {'; '.join(reasons)}" if reasons else ""))
+    behind_note = checkout_behind_note(_behind_origin_live())
+    if behind_note:
+        print(f"  {behind_note}")
     for w in r["windows"]:
         s_, d_ = w["start"].astimezone(PT), w["deadline"].astimezone(PT)
         line = (f"  {w['status']:8s} {w['name']:18s} "
