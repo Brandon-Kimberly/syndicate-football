@@ -1334,3 +1334,10 @@
 {"injury_body_part": null, "injury_status": null, "name": "Trey Hendrickson", "player_id": "4135", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Polar Yetis", "week": 6}
 {"injury_body_part": null, "injury_status": null, "name": "Budda Baker", "player_id": "4081", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Quantum Ferrets", "week": 6}
 {"injury_body_part": null, "injury_status": null, "name": "Dameon Pierce", "player_id": "8129", "practice_participation": null, "recorded_at": "2026-10-16T17:42:38Z", "team": "Quantum Ferrets", "week": 6}
+{"injury_body_part": null, "injury_status": null, "name": "Ladd McConkey", "player_id": "11635", "practice_participation": null, "recorded_at": "2026-10-17T16:40:10Z", "team": "Cosmic Badgers", "week": 6}
+{"injury_body_part": null, "injury_status": null, "name": "Tanner McKee", "player_id": "9230", "practice_participation": null, "recorded_at": "2026-10-17T16:40:10Z", "team": "Crimson Marmots", "week": 6}
+{"injury_body_part": "Groin", "injury_status": "Questionable", "name": "Tyler Warren", "player_id": "12518", "practice_participation": null, "recorded_at": "2026-10-17T16:40:10Z", "team": "Iron Wombats", "week": 6}
+{"injury_body_part": "Ankle", "injury_status": "Out", "name": "Jeremiyah Love", "player_id": "13287", "practice_participation": null, "recorded_at": "2026-10-17T16:40:10Z", "team": "Polar Yetis", "week": 6}
+{"injury_body_part": "Hamstring", "injury_status": "Out", "name": "Rashee Rice", "player_id": "10229", "practice_participation": null, "recorded_at": "2026-10-17T16:40:10Z", "team": "Polar Yetis", "week": 6}
+{"injury_body_part": "Groin", "injury_status": "Questionable", "name": "Budda Baker", "player_id": "4081", "practice_participation": null, "recorded_at": "2026-10-17T16:40:10Z", "team": "Quantum Ferrets", "week": 6}
+{"injury_body_part": null, "injury_status": null, "name": "DeVonta Smith", "player_id": "7525", "practice_participation": null, "recorded_at": "2026-10-17T16:40:10Z", "team": "Quantum Ferrets", "week": 6}
