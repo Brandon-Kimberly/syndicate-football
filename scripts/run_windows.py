@@ -76,9 +76,37 @@ def _local_digest_stamps(week):
     return stamps
 
 
+def _origin_rows():
+    """The predictions log as origin/main has it: the record the runner commits to. A checkout
+    behind origin/main cannot see the canonical rows the runner pushed, so a covered window reads
+    MISSED here (2026-10-17: the daily popup said week 6 run1 was missed; the runner's row was
+    committed at 17:59Z on Thursday, before the deadline). Read-only, no fetch. Empty on any
+    failure: this only adds coverage that is already durable."""
+    import glob
+    import subprocess
+    paths = sorted(glob.glob(os.path.join("data", "logs", "predictions_*.jsonl")))
+    if not paths:
+        return []
+    try:
+        out = subprocess.run(["git", "show", f"origin/main:{paths[-1].replace(os.sep, '/')}"],
+                             capture_output=True, text=True, timeout=20)
+    except Exception:
+        return []
+    if out.returncode != 0:
+        return []
+    rows = []
+    for line in out.stdout.splitlines():
+        if line.strip():
+            try:
+                rows.append(json.loads(line))
+            except ValueError:
+                continue
+    return rows
+
+
 def _canonical_stamps(week):
     """Coverage from BOTH machines: local digest files UNION the committed predictions
-    log's canonical rows.
+    log's canonical rows, read from the local checkout AND from origin/main.
 
     Digests live in untracked data/decisions/, so they only ever exist on the machine
     that ran the report. When the F36 runner started covering windows itself
@@ -94,6 +122,7 @@ def _canonical_stamps(week):
         rows = read_predictions_rows()
     except OSError:
         rows = []
+    rows = list(rows) + _origin_rows()
     for name, dt in stamps_from_predictions_rows(rows, week):
         if dt not in seen:
             seen.add(dt)

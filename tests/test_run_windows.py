@@ -283,6 +283,15 @@ class TestLocalCoverageSeesRunnerCanonicalRuns(unittest.TestCase):
     ROW = {"record_type": "week_predictions", "canonical": True, "week": 1,
            "logged_at": "2026-09-13T15:10:19Z"}
 
+    def setUp(self):
+        from unittest.mock import patch
+        import scripts.run_windows as rw
+        # Hermetic: these fixtures are the whole picture. The production path also reads
+        # origin/main live (2026-10-17), so that read is stubbed here as the local log is.
+        p = patch.object(rw, "_origin_rows", return_value=[])
+        p.start()
+        self.addCleanup(p.stop)
+
     def test_a_row_committed_by_the_runner_counts_as_local_coverage(self):
         from unittest.mock import patch
         import scripts.run_windows as rw
