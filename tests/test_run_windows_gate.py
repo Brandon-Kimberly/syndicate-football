@@ -17,8 +17,10 @@ def u(s):
     return datetime.fromisoformat(s).replace(tzinfo=timezone.utc)
 
 
-# Week 5's last game (Mon 17:15 PT) and week 6's first (Thu 17:15 PT), as UTC.
-KICKS = {5: [u("2026-10-13T00:15:00")], 6: [u("2026-10-16T00:15:00")]}
+# Week 5 (Sun 10:00 PT and Mon 17:15 PT games) and week 6's first kickoff (Thu 17:15 PT), as UTC.
+# Week 5 needs its Sunday game: without it week 5's run windows sit in the future and the watch
+# targets week 5, which is how this fixture first failed (a fixture error, not a code error).
+KICKS = {5: [u("2026-10-11T17:00:00"), u("2026-10-13T00:15:00")], 6: [u("2026-10-16T00:15:00")]}
 WEDNESDAY_0742_PT = u("2026-10-14T17:42:00")  # 10:42 PT, 30.6 h before the week-6 deadline
 
 

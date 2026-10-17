@@ -300,19 +300,24 @@ def _utc_stamp(dt):
 
 def watch_verdict(result, now_utc, horizon_hours=24.0):
     """Pure: which windows need a human NOW. actionable = OPEN, uncovered, deadline
-    inside the horizon; missed = past deadline, uncovered. Quiet otherwise -- a
-    reminder that fires three times a week on nothing trains itself to be ignored."""
-    actionable, missed = [], []
+    inside the horizon (the NOTIFY rule: an issue is opened only that close to the deadline);
+    open_uncovered = OPEN and uncovered at any distance from the deadline (the RUN rule: the
+    canonical run acts on any open, uncovered window, so the first fire of a window covers it);
+    missed = past deadline, uncovered. Quiet otherwise -- a reminder that fires three times a
+    week on nothing trains itself to be ignored."""
+    actionable, open_uncovered, missed = [], [], []
     for w in result.get("windows") or []:
         if w.get("covered_by"):
             continue
         if w.get("status") == "OPEN":
             hours = (w["deadline"] - now_utc).total_seconds() / 3600.0
+            entry = {"name": w["name"], "hours_left": round(hours, 1),
+                     "deadline": _utc_stamp(w["deadline"])}
+            open_uncovered.append(entry)
             if hours <= horizon_hours:
-                actionable.append({"name": w["name"], "hours_left": round(hours, 1),
-                                   "deadline": _utc_stamp(w["deadline"])})
+                actionable.append(entry)
         elif w.get("status") == "MISSED":
             missed.append({"name": w["name"],
                            "deadline": _utc_stamp(w["deadline"])})
     return {"target_week": result.get("target_week"),
-            "actionable": actionable, "missed": missed}
+            "actionable": actionable, "open_uncovered": open_uncovered, "missed": missed}

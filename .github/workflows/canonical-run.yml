@@ -20,16 +20,18 @@
 #            was designed against (tests/test_canonical_schedule.py). With that lag the first
 #            fire does NOT reliably beat a ~13:30 UTC international kickoff.
 #   Thursday 13:00 + 17:30 UTC  vs the usual ~00:20 Friday UTC kickoff
-#   Wednesday 13:00 UTC          self-selecting via the <=24h proceed gate: quiet skip
-#            on normal weeks, a real run only when the opener is Wednesday
+#   Wednesday 13:00 UTC          the first fire of a normal week's run1 window (opens Wednesday
+#            00:00 PT). From 2026-10-16 the gate is open + uncovered at ANY distance from the
+#            deadline (windows_watch open_uncovered), so this fire runs the window rather than
+#            leaving it to Thursday's fires (tests/test_run_windows_gate.py)
 #   Tuesday  15:00 + 20:00 UTC  vs Wednesday 07:00/08:00 UTC waiver clear
 name: canonical-run
 on:
   schedule:
-    # Wednesday-opener guard (2026-09-06): fires every Wednesday but the proceed gate
-    # (open + uncovered + <=24h to deadline) makes it a quiet skip on normal weeks --
-    # Thursday's deadline sits ~35h out -- and a real run only when the week's earliest
-    # kickoff is Wednesday (the week-1 case, generalized).
+    # Wednesday fire (2026-09-06, revised 2026-10-16): the run1 window opens Wednesday 00:00 PT
+    # and its deadline is the week's first kickoff, ~30-40 h later. The gate is open +
+    # uncovered (any distance), so the Wednesday fire runs the window at once. The earlier
+    # <=24h gate made Wednesday a quiet skip and left the window to Thursday's fires alone.
     - cron: "0 13 * * 3"
     - cron: "0 13 * * 4"
     - cron: "30 17 * * 4"
@@ -88,7 +90,10 @@ jobs:
         run: |
           python -m scripts.windows_watch > watch.json
           cat watch.json
-          n=$(jq '.actionable | length' watch.json)
+          # open_uncovered, not actionable: the 24h notify horizon must not gate the RUN
+          # (2026-10-16: week 6 run1 sat 30 h from its deadline on the Wednesday fire, skipped,
+          # and was covered only by Thursday's fire, 6.5 h before the deadline).
+          n=$(jq '.open_uncovered | length' watch.json)
           if [ "$MODE" = "force-report" ] || [ "$MODE" = "force-canonical" ]; then
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             jq -n --arg m "manual-$MODE" '{name: $m, deadline: "(n/a -- manual dispatch)", hours_left: 0}' > window.json
@@ -98,7 +103,7 @@ jobs:
             echo "No open uncovered window -- nothing to do."
           else
             echo "proceed=true" >> "$GITHUB_OUTPUT"
-            jq -c '.actionable[0]' watch.json > window.json
+            jq -c '.open_uncovered[0]' watch.json > window.json
           fi
 
       - name: Sync
