@@ -51,10 +51,25 @@ def _release_advice_live(week):
     return release_advice(tag, changed, week)
 
 
-def _behind_origin_live():
-    """How many commits origin/main has that this checkout lacks, as of the last fetch; None when
-    git cannot answer. Read-only: no fetch is made here."""
+def _fetch_origin():
+    """Refresh the origin/main ref before anything compares against it. Both the coverage read and
+    the behind-origin note use that ref: a stale one read a covered window as MISSED (2026-10-18,
+    the 17:00Z popup, against a row the runner had pushed at 13:41Z). Touches refs only, never the
+    working tree or the logs. False when the fetch fails; the cached ref is then used."""
     import subprocess
+    try:
+        out = subprocess.run(["git", "fetch", "--quiet", "origin", "main"],
+                             capture_output=True, text=True, timeout=60)
+        return out.returncode == 0
+    except Exception:
+        return False
+
+
+def _behind_origin_live():
+    """How many commits origin/main has that this checkout lacks, after refreshing origin/main;
+    None when git cannot answer."""
+    import subprocess
+    _fetch_origin()
     try:
         out = subprocess.run(["git", "rev-list", "--count", "HEAD..origin/main"],
                              capture_output=True, text=True, timeout=10)
@@ -80,13 +95,15 @@ def _origin_rows():
     """The predictions log as origin/main has it: the record the runner commits to. A checkout
     behind origin/main cannot see the canonical rows the runner pushed, so a covered window reads
     MISSED here (2026-10-17: the daily popup said week 6 run1 was missed; the runner's row was
-    committed at 17:59Z on Thursday, before the deadline). Read-only, no fetch. Empty on any
-    failure: this only adds coverage that is already durable."""
+    committed at 17:59Z on Thursday, before the deadline). Fetches origin/main first (2026-10-18:
+    a cached ref read a 13:41Z covering row as missing at 17:00Z). Empty on any failure: this only
+    adds coverage that is already durable."""
     import glob
     import subprocess
     paths = sorted(glob.glob(os.path.join("data", "logs", "predictions_*.jsonl")))
     if not paths:
         return []
+    _fetch_origin()
     try:
         out = subprocess.run(["git", "show", f"origin/main:{paths[-1].replace(os.sep, '/')}"],
                              capture_output=True, text=True, timeout=20)
