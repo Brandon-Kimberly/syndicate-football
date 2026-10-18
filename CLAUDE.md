@@ -18,7 +18,7 @@ requirements.txt`). On this machine plain `python` resolves to the retired Windo
 access violation in the test process (`AUDIT_PLAN.md` R1). Use the launcher:
 
 ```bash
-py -3.10 -m unittest discover tests      # full suite — 2469 tests, must all pass
+py -3.10 -m unittest discover tests      # full suite — 2470 tests, must all pass
 py -3.10 -m scripts.forecast_accuracy    # league-wide forecast accuracy vs banked results (read-only unless --record, which data-capture runs daily; docs/audit/FORECAST_WATCH.md)
 py -3.10 -m tests.test_golden_master     # reproducibility harness — 15 tests, three scenarios, byte-exact
 py -3.10 -m tests.golden_sync            # sync-stage golden: baseline generation from pinned inputs (--regenerate = MAJOR)
