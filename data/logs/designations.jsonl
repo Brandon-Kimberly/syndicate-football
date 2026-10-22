@@ -1580,3 +1580,4 @@
 {"injury_body_part": "Illness", "injury_status": "Questionable", "name": "Bucky Irving", "player_id": "11584", "practice_participation": null, "recorded_at": "2026-10-22T18:11:01Z", "team": "Turbo Llamas", "week": 7}
 {"injury_body_part": "Concussion", "injury_status": "Questionable", "name": "Emeka Egbuka", "player_id": "12514", "practice_participation": null, "recorded_at": "2026-10-22T18:11:01Z", "team": "Turbo Llamas", "week": 7}
 {"injury_body_part": "Shoulder", "injury_status": "Questionable", "name": "Matthew Golden", "player_id": "12501", "practice_participation": null, "recorded_at": "2026-10-22T18:11:01Z", "team": "Turbo Llamas", "week": 7}
+{"injury_body_part": "Knee - ACL", "injury_status": "Questionable", "name": "Zach Charbonnet", "player_id": "9753", "practice_participation": null, "recorded_at": "2026-10-22T18:40:54Z", "team": "Crimson Marmots", "week": 7}
