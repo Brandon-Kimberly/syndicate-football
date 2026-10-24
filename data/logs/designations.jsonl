@@ -1595,3 +1595,4 @@
 {"injury_body_part": null, "injury_status": null, "name": "Mason Graham", "player_id": "12573", "practice_participation": null, "recorded_at": "2026-10-24T16:59:52Z", "team": "Crimson Marmots", "week": 7}
 {"injury_body_part": "Knee - ACL", "injury_status": "Out", "name": "Zach Charbonnet", "player_id": "9753", "practice_participation": null, "recorded_at": "2026-10-24T16:59:52Z", "team": "Crimson Marmots", "week": 7}
 {"injury_body_part": null, "injury_status": null, "name": "Azeez Al-Shaair", "player_id": "6485", "practice_participation": null, "recorded_at": "2026-10-24T16:59:52Z", "team": "Turbo Llamas", "week": 7}
+{"injury_body_part": "Concussion", "injury_status": "Out", "name": "Jev\u00f3n Holland", "player_id": "7666", "practice_participation": null, "recorded_at": "2026-10-24T17:30:38Z", "team": "Cosmic Badgers", "week": 7}
