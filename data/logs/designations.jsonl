@@ -1601,3 +1601,4 @@
 {"injury_body_part": "Ankle", "injury_status": "Questionable", "name": "Jonah Coleman", "player_id": "13345", "practice_participation": null, "recorded_at": "2026-10-25T13:49:44Z", "team": "Polar Yetis", "week": 7}
 {"injury_body_part": null, "injury_status": null, "name": "Chris Godwin Jr.", "player_id": "4037", "practice_participation": null, "recorded_at": "2026-10-25T13:49:44Z", "team": "Quantum Ferrets", "week": 7}
 {"injury_body_part": "Hamstring", "injury_status": "Out", "name": "DeVonta Smith", "player_id": "7525", "practice_participation": null, "recorded_at": "2026-10-25T13:49:44Z", "team": "Quantum Ferrets", "week": 7}
+{"injury_body_part": null, "injury_status": null, "name": "Seth McGowan", "player_id": "13424", "practice_participation": null, "recorded_at": "2026-10-25T17:14:07Z", "team": "Quantum Ferrets", "week": 7}
