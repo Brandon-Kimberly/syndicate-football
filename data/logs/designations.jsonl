@@ -1602,3 +1602,8 @@
 {"injury_body_part": null, "injury_status": null, "name": "Chris Godwin Jr.", "player_id": "4037", "practice_participation": null, "recorded_at": "2026-10-25T13:49:44Z", "team": "Quantum Ferrets", "week": 7}
 {"injury_body_part": "Hamstring", "injury_status": "Out", "name": "DeVonta Smith", "player_id": "7525", "practice_participation": null, "recorded_at": "2026-10-25T13:49:44Z", "team": "Quantum Ferrets", "week": 7}
 {"injury_body_part": null, "injury_status": null, "name": "Seth McGowan", "player_id": "13424", "practice_participation": null, "recorded_at": "2026-10-25T17:14:07Z", "team": "Quantum Ferrets", "week": 7}
+{"injury_body_part": "Hamstring", "injury_status": "Questionable", "name": "Cam Skattebo", "player_id": "12481", "practice_participation": null, "recorded_at": "2026-10-26T19:35:10Z", "team": "Iron Wombats", "week": 7}
+{"injury_body_part": "Head", "injury_status": "Questionable", "name": "Drake London", "player_id": "8112", "practice_participation": null, "recorded_at": "2026-10-26T19:35:10Z", "team": "Iron Wombats", "week": 7}
+{"injury_body_part": "Calf", "injury_status": "Questionable", "name": "Christian McCaffrey", "player_id": "4034", "practice_participation": null, "recorded_at": "2026-10-26T19:35:10Z", "team": "Neon Walruses", "week": 7}
+{"injury_body_part": null, "injury_status": null, "name": "Jonah Coleman", "player_id": "13345", "practice_participation": null, "recorded_at": "2026-10-26T19:35:10Z", "team": "Polar Yetis", "week": 7}
+{"injury_body_part": "Leg", "injury_status": "Questionable", "name": "Woody Marks", "player_id": "12474", "practice_participation": null, "recorded_at": "2026-10-26T19:35:10Z", "team": "Quantum Ferrets", "week": 7}
