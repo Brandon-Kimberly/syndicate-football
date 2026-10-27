@@ -26,3 +26,5 @@
 {"cleared": true, "delta": 0.0, "explained_by_history": 0.0, "recorded_at": "2026-10-14T16:11:40Z", "roster_id": null, "team": "Crimson Marmots", "used": 0.0, "week": 6}
 {"delta": -10.0, "explained_by_history": 55.0, "recorded_at": "2026-10-20T18:07:49Z", "roster_id": 2, "team": "Rocket Pandas", "used": 65.0, "week": 7}
 {"delta": 2.0, "explained_by_history": 43.0, "recorded_at": "2026-10-20T18:07:49Z", "roster_id": 4, "team": "Cosmic Badgers", "used": 41.0, "week": 7}
+{"delta": -10.0, "explained_by_history": 60.0, "recorded_at": "2026-10-27T19:00:16Z", "roster_id": 2, "team": "Rocket Pandas", "used": 70.0, "week": 8}
+{"delta": 2.0, "explained_by_history": 44.0, "recorded_at": "2026-10-27T19:00:16Z", "roster_id": 4, "team": "Cosmic Badgers", "used": 42.0, "week": 8}
