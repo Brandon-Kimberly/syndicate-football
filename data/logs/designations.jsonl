@@ -2047,3 +2047,13 @@
 {"injury_body_part": null, "injury_status": null, "name": "Breece Hall", "player_id": "8155", "practice_participation": null, "recorded_at": "2026-11-05T21:09:19Z", "team": "Quantum Ferrets", "week": 9}
 {"injury_body_part": null, "injury_status": null, "name": "David Bailey", "player_id": "13363", "practice_participation": null, "recorded_at": "2026-11-05T21:09:19Z", "team": "Quantum Ferrets", "week": 9}
 {"injury_body_part": null, "injury_status": null, "name": "Emeka Egbuka", "player_id": "12514", "practice_participation": null, "recorded_at": "2026-11-05T21:09:19Z", "team": "Turbo Llamas", "week": 9}
+{"injury_body_part": "Chest", "injury_status": "Questionable", "name": "Andrew Van Ginkel", "player_id": "6183", "practice_participation": null, "recorded_at": "2026-11-06T20:06:40Z", "team": "Cosmic Badgers", "week": 9}
+{"injury_body_part": null, "injury_status": null, "name": "Jordan Addison", "player_id": "9756", "practice_participation": null, "recorded_at": "2026-11-06T20:06:40Z", "team": "Iron Wombats", "week": 9}
+{"injury_body_part": "Shoulder", "injury_status": "Questionable", "name": "Keon Coleman", "player_id": "11637", "practice_participation": null, "recorded_at": "2026-11-06T20:06:40Z", "team": "Iron Wombats", "week": 9}
+{"injury_body_part": "Hip", "injury_status": "Out", "name": "Kyle Hamilton", "player_id": "8339", "practice_participation": null, "recorded_at": "2026-11-06T20:06:40Z", "team": "Iron Wombats", "week": 9}
+{"injury_body_part": null, "injury_status": null, "name": "Bhayshul Tuten", "player_id": "12490", "practice_participation": null, "recorded_at": "2026-11-06T20:06:40Z", "team": "Neon Walruses", "week": 9}
+{"injury_body_part": "Thumb", "injury_status": "IR", "name": "Lamar Jackson", "player_id": "4881", "practice_participation": null, "recorded_at": "2026-11-06T20:06:40Z", "team": "Neon Walruses", "week": 9}
+{"injury_body_part": "Chest", "injury_status": "Questionable", "name": "Dalton Kincaid", "player_id": "10236", "practice_participation": null, "recorded_at": "2026-11-06T20:06:40Z", "team": "Polar Yetis", "week": 9}
+{"injury_body_part": "Ankle", "injury_status": "Questionable", "name": "Ernest Jones IV", "player_id": "7672", "practice_participation": null, "recorded_at": "2026-11-06T20:06:40Z", "team": "Polar Yetis", "week": 9}
+{"injury_body_part": "Concussion", "injury_status": "Out", "name": "Garrett Wilson", "player_id": "8146", "practice_participation": null, "recorded_at": "2026-11-06T20:06:40Z", "team": "Rocket Pandas", "week": 9}
+{"injury_body_part": null, "injury_status": null, "name": "Mike Gesicki", "player_id": "4993", "practice_participation": null, "recorded_at": "2026-11-06T20:06:40Z", "team": "Rocket Pandas", "week": 9}
