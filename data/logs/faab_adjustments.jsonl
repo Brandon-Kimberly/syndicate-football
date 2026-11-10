@@ -30,3 +30,5 @@
 {"delta": 2.0, "explained_by_history": 44.0, "recorded_at": "2026-10-27T19:00:16Z", "roster_id": 4, "team": "Cosmic Badgers", "used": 42.0, "week": 8}
 {"delta": -10.0, "explained_by_history": 48.0, "recorded_at": "2026-11-03T20:18:53Z", "roster_id": 2, "team": "Rocket Pandas", "used": 58.0, "week": 9}
 {"delta": 2.0, "explained_by_history": 44.0, "recorded_at": "2026-11-03T20:18:53Z", "roster_id": 4, "team": "Cosmic Badgers", "used": 42.0, "week": 9}
+{"delta": -10.0, "explained_by_history": 48.0, "recorded_at": "2026-11-10T20:37:51Z", "roster_id": 2, "team": "Rocket Pandas", "used": 58.0, "week": 10}
+{"delta": 2.0, "explained_by_history": 44.0, "recorded_at": "2026-11-10T20:37:51Z", "roster_id": 4, "team": "Cosmic Badgers", "used": 42.0, "week": 10}
