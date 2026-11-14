@@ -2293,3 +2293,10 @@
 {"injury_body_part": "Ankle", "injury_status": "Questionable", "name": "Will Anderson Jr.", "player_id": "10892", "practice_participation": null, "recorded_at": "2026-11-13T20:40:28Z", "team": "Rocket Pandas", "week": 10}
 {"injury_body_part": null, "injury_status": null, "name": "Cole Bishop", "player_id": "11682", "practice_participation": null, "recorded_at": "2026-11-13T20:40:28Z", "team": "Turbo Llamas", "week": 10}
 {"injury_body_part": null, "injury_status": null, "name": "Dylan Sampson", "player_id": "12469", "practice_participation": null, "recorded_at": "2026-11-13T20:40:28Z", "team": "Turbo Llamas", "week": 10}
+{"injury_body_part": "Groin", "injury_status": "Out", "name": "David Montgomery", "player_id": "5892", "practice_participation": null, "recorded_at": "2026-11-14T18:52:05Z", "team": "Crimson Marmots", "week": 10}
+{"injury_body_part": "Thumb", "injury_status": "Questionable", "name": "Jordan Addison", "player_id": "9756", "practice_participation": null, "recorded_at": "2026-11-14T18:52:05Z", "team": "Iron Wombats", "week": 10}
+{"injury_body_part": null, "injury_status": null, "name": "George Pickens", "player_id": "8137", "practice_participation": null, "recorded_at": "2026-11-14T18:52:05Z", "team": "Neon Walruses", "week": 10}
+{"injury_body_part": "Groin", "injury_status": "Out", "name": "Kenneth Walker III", "player_id": "8151", "practice_participation": null, "recorded_at": "2026-11-14T18:52:05Z", "team": "Polar Yetis", "week": 10}
+{"injury_body_part": "Concussion", "injury_status": "Out", "name": "Blake Cashman", "player_id": "6217", "practice_participation": null, "recorded_at": "2026-11-14T18:52:05Z", "team": "Quantum Ferrets", "week": 10}
+{"injury_body_part": null, "injury_status": null, "name": "Foyesade Oluokun", "player_id": "5332", "practice_participation": null, "recorded_at": "2026-11-14T18:52:05Z", "team": "Quantum Ferrets", "week": 10}
+{"injury_body_part": "Wrist", "injury_status": "Out", "name": "T.J. Hockenson", "player_id": "5844", "practice_participation": null, "recorded_at": "2026-11-14T18:52:05Z", "team": "Rocket Pandas", "week": 10}
