@@ -2300,3 +2300,11 @@
 {"injury_body_part": "Concussion", "injury_status": "Out", "name": "Blake Cashman", "player_id": "6217", "practice_participation": null, "recorded_at": "2026-11-14T18:52:05Z", "team": "Quantum Ferrets", "week": 10}
 {"injury_body_part": null, "injury_status": null, "name": "Foyesade Oluokun", "player_id": "5332", "practice_participation": null, "recorded_at": "2026-11-14T18:52:05Z", "team": "Quantum Ferrets", "week": 10}
 {"injury_body_part": "Wrist", "injury_status": "Out", "name": "T.J. Hockenson", "player_id": "5844", "practice_participation": null, "recorded_at": "2026-11-14T18:52:05Z", "team": "Rocket Pandas", "week": 10}
+{"injury_body_part": null, "injury_status": null, "name": "A.J. Brown", "player_id": "5859", "practice_participation": null, "recorded_at": "2026-11-15T16:30:43Z", "team": "Cosmic Badgers", "week": 10}
+{"injury_body_part": null, "injury_status": null, "name": "Rhamondre Stevenson", "player_id": "7611", "practice_participation": null, "recorded_at": "2026-11-15T16:30:43Z", "team": "Cosmic Badgers", "week": 10}
+{"injury_body_part": "Hamstring", "injury_status": "Questionable", "name": "Travis Etienne Jr.", "player_id": "7543", "practice_participation": null, "recorded_at": "2026-11-15T16:30:43Z", "team": "Cosmic Badgers", "week": 10}
+{"injury_body_part": "Ankle", "injury_status": "Out", "name": "Drake Maye", "player_id": "11564", "practice_participation": null, "recorded_at": "2026-11-15T16:30:43Z", "team": "Iron Wombats", "week": 10}
+{"injury_body_part": null, "injury_status": null, "name": "Patrick Mahomes", "player_id": "4046", "practice_participation": null, "recorded_at": "2026-11-15T16:30:43Z", "team": "Neon Walruses", "week": 10}
+{"injury_body_part": "Knee", "injury_status": "Questionable", "name": "Adonai Mitchell", "player_id": "11625", "practice_participation": null, "recorded_at": "2026-11-15T16:30:43Z", "team": "Polar Yetis", "week": 10}
+{"injury_body_part": "Knee", "injury_status": "Questionable", "name": "Aidan Hutchinson", "player_id": "8289", "practice_participation": null, "recorded_at": "2026-11-15T16:30:43Z", "team": "Turbo Llamas", "week": 10}
+{"injury_body_part": "Illness", "injury_status": "IR", "name": "TreVeyon Henderson", "player_id": "12529", "practice_participation": null, "recorded_at": "2026-11-15T16:30:43Z", "team": "Turbo Llamas", "week": 10}
