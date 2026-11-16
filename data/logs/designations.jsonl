@@ -2312,3 +2312,9 @@
 {"injury_body_part": null, "injury_status": null, "name": "Travis Etienne Jr.", "player_id": "7543", "practice_participation": null, "recorded_at": "2026-11-15T19:28:59Z", "team": "Cosmic Badgers", "week": 10}
 {"injury_body_part": "Ankle", "injury_status": "Questionable", "name": "Travis Kelce", "player_id": "1466", "practice_participation": null, "recorded_at": "2026-11-15T19:28:59Z", "team": "Cosmic Badgers", "week": 10}
 {"injury_body_part": "Thumb", "injury_status": "Out", "name": "Jordan Addison", "player_id": "9756", "practice_participation": null, "recorded_at": "2026-11-15T19:28:59Z", "team": "Iron Wombats", "week": 10}
+{"injury_body_part": "Back", "injury_status": "Out", "name": "Ladd McConkey", "player_id": "11635", "practice_participation": null, "recorded_at": "2026-11-16T23:02:47Z", "team": "Cosmic Badgers", "week": 10}
+{"injury_body_part": "Head", "injury_status": "Questionable", "name": "Drake London", "player_id": "8112", "practice_participation": null, "recorded_at": "2026-11-16T23:02:47Z", "team": "Iron Wombats", "week": 10}
+{"injury_body_part": "Ankle", "injury_status": "Out", "name": "Brock Bowers", "player_id": "11604", "practice_participation": null, "recorded_at": "2026-11-16T23:02:47Z", "team": "Neon Walruses", "week": 10}
+{"injury_body_part": "Ankle", "injury_status": "Out", "name": "Omar Cooper Jr.", "player_id": "13276", "practice_participation": null, "recorded_at": "2026-11-16T23:02:47Z", "team": "Quantum Ferrets", "week": 10}
+{"injury_body_part": "Concussion", "injury_status": "Out", "name": "Woody Marks", "player_id": "12474", "practice_participation": null, "recorded_at": "2026-11-16T23:02:47Z", "team": "Quantum Ferrets", "week": 10}
+{"injury_body_part": "Knee - ACL", "injury_status": "Out", "name": "Aidan Hutchinson", "player_id": "8289", "practice_participation": null, "recorded_at": "2026-11-16T23:02:47Z", "team": "Turbo Llamas", "week": 10}
