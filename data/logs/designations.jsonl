@@ -2522,3 +2522,7 @@
 {"injury_body_part": null, "injury_status": null, "name": "DeVonta Smith", "player_id": "7525", "practice_participation": null, "recorded_at": "2026-11-20T21:34:07Z", "team": "Quantum Ferrets", "week": 11}
 {"injury_body_part": "Heel", "injury_status": "Questionable", "name": "Rachaad White", "player_id": "8136", "practice_participation": null, "recorded_at": "2026-11-20T21:34:07Z", "team": "Quantum Ferrets", "week": 11}
 {"injury_body_part": null, "injury_status": null, "name": "T.J. Hockenson", "player_id": "5844", "practice_participation": null, "recorded_at": "2026-11-20T21:34:07Z", "team": "Rocket Pandas", "week": 11}
+{"injury_body_part": "Toe", "injury_status": "Questionable", "name": "Kyren Williams", "player_id": "8150", "practice_participation": null, "recorded_at": "2026-11-22T17:16:56Z", "team": "Cosmic Badgers", "week": 11}
+{"injury_body_part": "Thumb", "injury_status": "Out", "name": "Dalton Kincaid", "player_id": "10236", "practice_participation": null, "recorded_at": "2026-11-22T17:16:56Z", "team": "Polar Yetis", "week": 11}
+{"injury_body_part": null, "injury_status": null, "name": "Jordan Battle", "player_id": "10927", "practice_participation": null, "recorded_at": "2026-11-22T17:16:56Z", "team": "Rocket Pandas", "week": 11}
+{"injury_body_part": null, "injury_status": null, "name": "Carnell Tate", "player_id": "13279", "practice_participation": null, "recorded_at": "2026-11-22T17:16:56Z", "team": "Turbo Llamas", "week": 11}
