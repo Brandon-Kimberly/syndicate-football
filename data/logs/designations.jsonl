@@ -2526,3 +2526,5 @@
 {"injury_body_part": "Thumb", "injury_status": "Out", "name": "Dalton Kincaid", "player_id": "10236", "practice_participation": null, "recorded_at": "2026-11-22T17:16:56Z", "team": "Polar Yetis", "week": 11}
 {"injury_body_part": null, "injury_status": null, "name": "Jordan Battle", "player_id": "10927", "practice_participation": null, "recorded_at": "2026-11-22T17:16:56Z", "team": "Rocket Pandas", "week": 11}
 {"injury_body_part": null, "injury_status": null, "name": "Carnell Tate", "player_id": "13279", "practice_participation": null, "recorded_at": "2026-11-22T17:16:56Z", "team": "Turbo Llamas", "week": 11}
+{"injury_body_part": null, "injury_status": null, "name": "Ladd McConkey", "player_id": "11635", "practice_participation": null, "recorded_at": "2026-11-22T20:29:34Z", "team": "Cosmic Badgers", "week": 11}
+{"injury_body_part": "Knee", "injury_status": "Questionable", "name": "DJ Moore", "player_id": "4983", "practice_participation": null, "recorded_at": "2026-11-22T20:29:34Z", "team": "Rocket Pandas", "week": 11}
