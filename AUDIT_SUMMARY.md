@@ -33,7 +33,7 @@ landed (2026-09-01). **Golden master:** three scenarios
 | F3 | 1 prerequisite | 2 | 0 | 0 | 0 |
 | **phase-era total** | **~46 findings** | **33 fixed** | **2** | **5 open, all tracked with numeric criteria** | **8 reported** |
 | F9–F35 (2026-08-30 → 09-03; see the F9–F35 section below) | 27 | 11 fixed / built | 6 measured & cleared | 10 open, tracked | 0 |
-| **grand total** | **~130 findings and tracked follow-ups** | **96 fixed or built** | — | open set enumerated in the table below | — |
+| **grand total** | **~130 findings and tracked follow-ups** | **99 fixed or built** | — | open set enumerated in the table below | — |
 
 "Open" means tracked with an acceptance criterion and a stated blocker.
 Fixed defects were verified by tests that failed against the old behaviour. Where a fix
@@ -225,7 +225,6 @@ Plus two wrong-direction predictions recorded as information (F6's null result; 
 | F17 | Commissioner-Exempt return timing (live data point) | event-driven — the week his status changes |
 | F18 / F19 | decision retrospective; cross-week odds trajectory | season data (~weeks 3–4); predictions log is the authoritative input (F25) |
 | F22 | IDP epistemic constants (volatility half closed by F28) | derive from F7's projection log after a season |
-| F25 | team-week interval under-dispersion, bracketed r ∈ [1.15, 1.34] | quoted-vs-realized calibration from the predictions log, ~week 5–6 |
 | F15 / F26 | draft realized-value row; the ten untested sync handler bodies | season data; fake-HTTP layer respectively |
 | R1 | **machine-level fault under multi-core load — verdict: RMA.** MemTest86 clean, AV excluded, BIOS/microcode updated to 0x133 with Intel Default Settings — Arm D still fails 9/12 and 11/12, so the chip itself is degraded (Vmin Shift class). Load threshold is not safe even at 3 concurrent real engine processes (1/3 silent death, 2026-09-01, no Reliability Monitor trace). Rules: one engine process at a time; a crashed or impossible-error run is void. CI on a cloud Windows runner now provides an independent, fault-free machine certifying every commit. (F90: from at least 2026-09-16 to 2026-11-27 it certified only that the coverage report printed; the suite's exit code was swallowed. Fixed 2026-11-27.) Re-test = Arm D 12/12 after the CPU is replaced. | AUDIT_PLAN.md R1 carries the full probe history |
 | F88 | the bid ledger can resolve losses and rival bids from the failed-claims log (B14's "a lost claim never becomes a transaction" was false) | not blocked; tests-first change to `bid_ledger.reconcile` |
@@ -390,6 +389,25 @@ than "fixed": the measurement said the code was right.
   DEFAULT ARGUMENT, so the patch did nothing and two rows went to the real log; correct values,
   but written by a harness and claiming to be sync readings, so the file was deleted rather
   than kept. Same class as H2. `check_test_isolation` CLEAN.
+- **F91** the point spread moved the script multiplier on no evidence — RESOLVED (MAJOR): the
+  unsourced spread effects (+0.15 favourite RB, −0.10 underdog RB, +0.10 underdog QB/WR/TE, +0.10
+  favourite DL/DEF) are removed. On 2026 weeks 6-11 favoured RBs came in 4.04 below their
+  multiplied expectation (se 1.45, 5 of 6 weeks) and 1.44 below without the term; every boosted
+  group missed low, the underdog penalties over-corrected. Defensive tiers unchanged.
+- **F92** the Bayesian blend put back the environment the neutralisation took out — RESOLVED
+  (MAJOR): neutralising before the blend let realised, environment-loaded scores restore ~30% of
+  it; healthy starters were quoted +1.21 over Sleeper and landed at Sleeper's number. The
+  neutralisation now runs after the blend. ENV_SHARE re-measured at 0.70 (0.48-0.91, n = 1175).
+- **F93** the backtest-fitted interval inflation was applied to live projections — RESOLVED
+  (MAJOR; closes F25): ×1.41 was fitted on positional-prior baselines and made live intervals
+  too wide (88 team-weeks: rms z 0.77, 80% band 90%). It now applies only to baselines that are
+  not this week's projection; projected live rms z 0.98, 80% band 82%. Open residual: narrower
+  draws raise simulated week01 season points ~1% via fewer unfilled slots, mechanism not traced.
+- **F94** the 2026 weeks 1-11 measurement pass — MEASURED: F25's three pre-registered questions
+  answered (no persistent under-quote; the lines question untestable as framed; tails too wide,
+  not thin); FORECAST_WATCH's team bar met by no team; F30's 2026 capture 0.98 (n = 11) does not
+  move 0.65 against F89's n = 316, and F30's revisit plan cannot run on the rostered-only F7 log;
+  F31's blended sim still spends UNDER the band, the gap is F34's early-season timing (January).
 - **F90** CI reported green while the suite failed, for two months — RESOLVED: the `ci` job's
   pwsh step took its result from `coverage report`, the last native command, so every green run
   sampled 2026-09-16 → 11-01 logged `FAILED (failures=1..2)`, including at the v11.0.0 and v11.1.0

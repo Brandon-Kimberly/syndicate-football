@@ -40,9 +40,12 @@ Same-NFL-team players move together through a **Gaussian copula** with measured
 correlation coefficients, re-confirmed league-wide on 391 players / 714 pooled
 pair-weeks of real data. Tail dependence was measured and deliberately **not** adopted
 (the measurement did not support it — recorded in the audit trail rather than assumed
-either way). Game environment (Vegas implied totals and spreads, live via
-the-odds-api) shifts means through position-level game-script multipliers; the
-multiplier magnitudes are documented as under-derived (F33).
+either way). Game environment (Vegas implied totals, live via the-odds-api) shifts
+means through the implied-total ratio, after the share Sleeper's projection already
+holds is removed (F89; since F92 that removal runs after the Bayesian blend). The
+only remaining game-script multiplier is the defensive tier (top-5 defence −6%,
+bottom-5 +4%, measured 2017-2025); the unsourced point-spread effects were measured
+wrong on 2026 weeks 6-11 and removed (F91).
 
 ## 3. Injuries and availability
 

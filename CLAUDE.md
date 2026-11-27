@@ -18,7 +18,7 @@ requirements.txt`). On this machine plain `python` resolves to the retired Windo
 access violation in the test process (`AUDIT_PLAN.md` R1). Use the launcher:
 
 ```bash
-py -3.10 -m unittest discover tests      # full suite — 2475 tests, must all pass
+py -3.10 -m unittest discover tests      # full suite — 2484 tests, must all pass
 py -3.10 -m scripts.forecast_accuracy    # league-wide forecast accuracy vs banked results (read-only unless --record, which data-capture runs daily; docs/audit/FORECAST_WATCH.md)
 py -3.10 -m tests.test_golden_master     # reproducibility harness — 15 tests, three scenarios, byte-exact
 py -3.10 -m tests.golden_sync            # sync-stage golden: baseline generation from pinned inputs (--regenerate = MAJOR)
@@ -145,8 +145,9 @@ and for Questionable by the NFL practice report) -- a known absence, drawn once 
 measured persistence; `week_expectation` prices it too, and `_initial_absence_clock` gives the OLD
 answer (healthy, no RNG) when called without a position; (2) Sleeper's week-specific projection already
 holds ~71% of the game environment, so the baseline is made environment-neutral at load before the one
-full implied-total ratio is applied (`ENV_SHARE_IN_PROJECTION`, UNVERIFIED beyond four weeks of one
-season -- `scripts.env_check` re-measures it; 0 restores the old behaviour); (3) LB/DB onset rates, the TE
+full implied-total ratio is applied (`ENV_SHARE_IN_PROJECTION`; re-measured at week 11 as 0.70, 95%
+0.48-0.91, n=1175 -- `scripts.env_check`; 0 restores the old behaviour; since F92 the neutralisation runs
+AFTER the Bayesian blend); (3) LB/DB onset rates, the TE
 vacated-volume capture and the bottom-defence bonus. Measured and REJECTED (do not re-propose without new
 evidence): any-given-stat's defence rating as the tier source, a snap-share role signal, and "unprojected
 means out". The `Questionable` DISPLAY flag and `INITIAL_ABSENCE_STATUSES` are unchanged.

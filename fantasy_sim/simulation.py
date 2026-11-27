@@ -182,7 +182,8 @@ def blend_faab_profiles(priors, observed, prior_weight=FAAB_PROFILE_PRIOR_WEIGHT
 
 
 def _inflate_aleatoric(baselines, factor):
-    """B7. Widen every stored `std_aleatoric` by `factor`, in place.
+    """B7. Widen the stored `std_aleatoric` by `factor`, in place -- for every baseline that is NOT
+    this week's projection (F93; see the loop).
 
     A separate function so it is testable and so `factor=1.0` is a visible no-op -- the
     constant alone must account for the difference between this model and the last one.
@@ -192,7 +193,14 @@ def _inflate_aleatoric(baselines, factor):
     if not factor or factor == 1.0:
         return baselines
     for entry in (baselines or {}).values():
-        if isinstance(entry, dict) and entry.get("std_aleatoric"):
+        # F93 (2026-11-27, MAJOR): only what is NOT this week's projection -- a positional prior,
+        # a carried or hand-typed mean, an auto-imputed zero. The factor was fitted on the 2025
+        # backtest, whose baselines are all positional priors; on Sleeper's week-specific
+        # projections it made every live interval too wide (config.INTERVAL_INFLATION). Same
+        # `projection_source` convention as the environment neutralisation.
+        if not isinstance(entry, dict) or not (entry.get("projection_source") or entry.get("auto_imputed")):
+            continue
+        if entry.get("std_aleatoric"):
             entry["std_aleatoric"] = float(entry["std_aleatoric"]) * float(factor)
     return baselines
 
@@ -439,14 +447,10 @@ class FantasySimulationEngine:
         except Exception:
             self.faab_profiles = {t: dict(p) for t, p in MANAGER_PROFILES.items()}
 
-        # ENV_SHARE_IN_PROJECTION (2026-10-12): Sleeper's weekly projection already holds most of the game
-        # environment; strip it out so the one full implied-total ratio the engine applies is the only one.
-        # BEFORE the interval inflation and the blend, which both read these means.
-        self.env_neutralized = self._neutralize_projection_environment()
-
         # B7: widen the predictive intervals BEFORE anything reads them. Measured at
         # sd_z_opt 1.27 against a nominal 1.0 -- see config.INTERVAL_INFLATION for the
-        # backtest entry and why this is aleatoric-only. Applied to self.baselines, which
+        # backtest entry and why this is aleatoric-only. F93: only for baselines that are not
+        # this week's projection, the kind the backtest measured. Applied to self.baselines, which
         # every consumer reads, so the tools and the engine cannot disagree about spread.
         _inflate_aleatoric(self.baselines, INTERVAL_INFLATION)
 
@@ -454,6 +458,15 @@ class FantasySimulationEngine:
         # replacement levels here; B8 (2026-09-23) moved the other two, closing that
         # finding's open half.
         self.calibration_report = self._apply_bayesian_updates()
+
+        # ENV_SHARE_IN_PROJECTION (2026-10-12): Sleeper's weekly projection already holds most of the game
+        # environment; strip it out so the one full implied-total ratio the engine applies is the only one.
+        # F92 (2026-11-27, MAJOR): AFTER the blend, not before it. The blend pulls each mean toward the
+        # player's realised scores, which carry their games' full environment, so neutralising first let
+        # every observed week put ~30% of it back (2026 weeks 6-11: slope -0.50 where -0.71 is intended;
+        # high-total starters lifted ~17% over Sleeper instead of ~7%). Neutralising the blended mean
+        # strips the environment from both halves. Before the builders below, which read these means.
+        self.env_neutralized = self._neutralize_projection_environment()
 
         # B8: built AFTER the blend, so vacated injury volume is apportioned on
         # CORRECTED means. Both builders snapshot p_info['mean'] into a sorted list, so
@@ -603,7 +616,7 @@ class FantasySimulationEngine:
         Extracted (F6) so the intended lineup -- solved before this week's onsets are drawn --
         values players exactly as the final assignment does; behaviour byte-identical to the
         inline block it replaces (golden master)."""
-        v_spr, v_opp = veg['spread'], veg['opponent']
+        v_opp = veg['opponent']
         script_mult = 1.0
         # Empirically-derived defensive tiers (see nfl_defensive_tiers.json,
         # built from real completed-game points-allowed data). Applied to
@@ -620,18 +633,13 @@ class FantasySimulationEngine:
         if v_opp in top_def and p_pos == 'RB': script_mult -= top_pen
         elif v_opp in bottom_def and p_pos == 'RB': script_mult += bot_bonus
 
-        # UNVERIFIED (carried over, 2026-10-12): the +0.15 / -0.10 RB spread effect, the +0.10
-        # pass-catcher effect and the +0.10 DL/DEF effect on favourite spreads below have no measured source. They are not in config.py,
-        # and no audit measurement sizes them (AUDIT_PLAN's game-script work measured QB/WR
-        # correlation, not these means). They may also fire on the same favourite games the
-        # environment ratio already rewards (not measured), so they are the first suspects when a
-        # team's quote runs high (docs/audit/FORECAST_WATCH.md). Changing them is a MAJOR.
-        if v_spr <= -5.5:
-            if p_pos == 'RB': script_mult += 0.15
-            elif p_pos in ['DL', 'DEF']: script_mult += 0.10
-        elif v_spr >= 5.5:
-            if p_pos in ['QB', 'WR', 'TE']: script_mult += 0.10
-            elif p_pos == 'RB': script_mult -= 0.10
+        # F91 (2026-11-27, MAJOR): the spread effects that used to follow here (+0.15 favourite RB,
+        # -0.10 underdog RB, +0.10 underdog QB/WR/TE, +0.10 favourite DL/DEF) had no source and were
+        # REMOVED on measurement: on 2026 weeks 6-11 favoured RBs came in 4.04 below their
+        # multiplied expectation (se 1.45, 5 of 6 weeks) and 1.44 below without the term; every
+        # boosted group missed the same way and the underdog penalties over-corrected. A spread is
+        # already in the implied total the environment ratio applies. tests/test_season_data_fixes
+        # pins it.
         return script_mult
 
     def _apportion_vacated_volume(self, team_vacated_volume, injury_clocks, newly_injured_this_week):

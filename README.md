@@ -3,7 +3,7 @@
 [![ci](https://github.com/Brandon-Kimberly/syndicate-football/actions/workflows/ci.yml/badge.svg)](https://github.com/Brandon-Kimberly/syndicate-football/actions/workflows/ci.yml)
 ![python](https://img.shields.io/badge/python-3.10-blue)
 [![license](https://img.shields.io/github/license/Brandon-Kimberly/syndicate-football)](LICENSE)
-![tests](https://img.shields.io/badge/tests-2475%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-2484%20passing-brightgreen)
 [![coverage](https://img.shields.io/badge/coverage-85.6%25-green)](#validation-and-audit-trail)
 
 ## In plain terms
@@ -23,7 +23,7 @@ IDP fantasy league. Each run simulates 10,000 seasons forward from the current w
 Every projection is a distribution. Every probability carries a standard error.
 
 **What makes it different:** the audit trail. **~130 findings and tracked follow-ups
-across 8 audit phases: 96 fixed or built, six suspected defects measured-and-cleared, 5
+across 8 audit phases: 99 fixed or built, six suspected defects measured-and-cleared, 5
 fixes reverted on real-data evidence. The full ledger is [AUDIT_SUMMARY.md](AUDIT_SUMMARY.md).**
 Every fix required a test that failed first. Every constant cites a source or says
 "unverified". A byte-exact 15-test golden master and a per-commit real-data backtest
@@ -281,7 +281,7 @@ Two credentials are read from environment variables, never hardcoded:
 ## Testing
 
 ```bash
-py -3.10 -m unittest discover tests      # expected: Ran 2475 tests ... OK (skipped=1, expected failures=3)
+py -3.10 -m unittest discover tests      # expected: Ran 2484 tests ... OK (skipped=1, expected failures=3)
 py -3.10 -m coverage run -m unittest discover tests && py -3.10 -m coverage report --show-missing
                                          # branch coverage; the committed floor (coverage_floor.txt) gates the
                                          # fantasy_sim package. Standalone milestone scripts are measured but

@@ -40,6 +40,18 @@ because a sample size has been shown to separate signal from noise.
   well below their multiplied expectation over at least six weeks, the +0.15 RB bonus gets a
   measurement, not a tweak. Any change to it is MAJOR (CLAUDE.md release policy).
 
+## Week-11 review (2026-11-27; AUDIT_PLAN F91-F94)
+
+- **Calibration bar: met, "too wide".** 80% band coverage was above 90% at weeks 5, 6 and 7 and
+  about 90% since (88 team-weeks: 89.8%; 50% band 64.8%). Cause found and fixed as F93: the B7
+  inflation, fitted on the backtest's positional priors, was applied to live projections.
+  Projected after the fix: 82% / 55%. The live record is the check from week 12 on.
+- **Team bar: no team qualifies.** Quantum Ferrets (−13.7, t −2.04) and Neon Walruses (+21.3,
+  t +2.14) are beyond two standard errors, but the multipliers do not drive either gap.
+- **Multiplier bar: met.** Favoured RBs came in 4.04 below their multiplied expectation (se
+  1.45), negative in 5 of 6 weeks; the spread effects are removed (F91). The environment
+  over-lift on high-total starters had a second cause, fixed as F92.
+
 ## Known gaps
 
 - The week-5 Vegas lines were stale for 28 of 32 teams. The 2026-10-12 sync refreshed week 6
