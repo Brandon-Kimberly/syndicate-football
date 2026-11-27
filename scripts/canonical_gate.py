@@ -61,6 +61,12 @@ BENIGN_MARKERS = (
     # never reads, so it cannot affect a quote. Classified 2026-09-29 by the post-roadmap review,
     # which showed one torn line could otherwise refuse every window.
     "FAILED CLAIMS:",
+    # F57's one-line weather-lookup failure (the forecast endpoint timed out or errored).
+    # Benign for the forecast because weather is read by nothing that computes (F55; verified
+    # 2026-11-27: only the matchup_watch / weekly_report display tables read it, and they
+    # render NULL as '-'). Classified 2026-11-27 (issue #55): unclassified, it cost week 11's
+    # run3_tuesday window. RECLASSIFY AS BLOCKING the day F55 adopts a weather term.
+    "WEATHER (week ",
 )
 
 # Forecast-affecting classes with dedicated remediations.
