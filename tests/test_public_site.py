@@ -294,5 +294,58 @@ class TestTheWorkflows(unittest.TestCase):
         self.assertNotIn("secrets.ODDS_API_KEY", wf)
 
 
+class TestTheDeployRetriesOnce(unittest.TestCase):
+    """2026-11-27: 3 of the last 6 runs built the site and passed the leak check, then the deploy
+    step failed with "Fetching artifact metadata failed ... No artifacts named github-pages were
+    found" -- the artifact had been uploaded seconds earlier (runs 46060226202, 46073106300). A
+    transient API miss; each one left the public site stale and opened an alarm issue. And a
+    whole-job re-run is no cure: attempt 2 of run 45920931673 found TWO github-pages artifacts
+    (its own and attempt 1's) and failed on that instead.
+
+    So: one upload, the deploy tried once more after a wait, and the alarm only when the retry
+    fails too. The leak check stays a hard stop -- nothing after it runs when it refuses."""
+
+    def steps(self):
+        try:
+            import yaml
+        except ImportError:                                  # pragma: no cover
+            self.skipTest("pyyaml not installed")
+        with open(os.path.join(REPO, ".github", "workflows", "pages-site.yml"), encoding="utf-8") as fh:
+            doc = yaml.safe_load(fh)
+        return doc["jobs"]["build-and-deploy"]
+
+    def test_one_upload_and_a_second_deploy_only_when_the_first_failed(self):
+        job = self.steps()
+        steps = job["steps"]
+        uploads = [s for s in steps if "upload-pages-artifact" in str(s.get("uses", ""))]
+        self.assertEqual(len(uploads), 1, "a second upload makes deploy-pages find two artifacts")
+        deploys = [s for s in steps if "deploy-pages" in str(s.get("uses", ""))]
+        self.assertEqual(len(deploys), 2, "the deploy, and one retry")
+        first, retry = deploys
+        self.assertIs(first.get("continue-on-error"), True, "a failed first try must not fail the job")
+        self.assertIn(f"steps.{first['id']}.outcome == 'failure'", str(retry.get("if", "")))
+        self.assertNotIn("continue-on-error", retry, "the retry's failure is the job's failure")
+        # a wait between the two, under the same condition
+        between = steps[steps.index(first) + 1:steps.index(retry)]
+        self.assertTrue(any("sleep" in str(s.get("run", "")) and f"steps.{first['id']}.outcome == 'failure'" in str(s.get("if", ""))
+                            for s in between), "a short wait before the retry")
+        # the page address comes from whichever deploy succeeded
+        url = str(job["environment"]["url"])
+        self.assertIn(f"steps.{first['id']}.outputs.page_url", url)
+        self.assertIn(f"steps.{retry['id']}.outputs.page_url", url)
+
+    def test_the_alarm_waits_for_the_retry_and_the_leak_check_still_stops_everything(self):
+        steps = self.steps()["steps"]
+        build = next(s for s in steps if "build_public_site" in str(s.get("run", "")))
+        self.assertNotIn("continue-on-error", build, "a leak-check refusal must stop the run")
+        after = steps[steps.index(build) + 1:]
+        for s in after:
+            cond = str(s.get("if", ""))
+            if "failure()" in cond or "always()" in cond:
+                self.assertIn("issue", str(s.get("run", "")), f"only the alarm may run after a failure: {s.get('name')}")
+        alarm = next(s for s in steps if "Automation failure: pages-site" in str(s.get("run", "")) and "gh issue create" in str(s.get("run", "")))
+        self.assertEqual(str(alarm.get("if")).strip(), "failure()")
+
+
 if __name__ == "__main__":
     unittest.main()
