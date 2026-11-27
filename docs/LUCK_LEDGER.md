@@ -81,6 +81,38 @@ Pooled that is −2.28 wins against a pooled SE near ±2.6, **z ≈ −0.88, p �
 consistent lean, and still indistinguishable from chance. Two seasons is not enough, which
 is the point of writing it down and waiting.
 
+## Correction, 2026-11-27 (F95): four defects, no definition changed
+
+Found reading the 2026 week-12 output. Every **delta** above is unchanged; what changed is
+which weeks count, which seasons are withheld, and the error bars.
+
+1. **Standard errors.** Opponent, DNP and scoring luck divided the spread of the *other*
+   teams' season values by sqrt(7): the standard error of the league average, not of one
+   team's difference from it. Under a null of eight identical teams that called 44% / 42% /
+   49% of seasons significant at 5%. Now each team's weekly difference from that week's
+   league average is pooled across the league (the null is that the teams are alike, so
+   they share one spread) and divided by sqrt(weeks): 2.0% / 5.3% / 4.3% on the same
+   null (`tests/test_luck_ledger_fixes.py`). A per-team spread was tried first and rejected:
+   eleven differences gave error bars from 4 to 13 points for the same measure, and 8-10%
+   false alarms.
+2. **Unfinished weeks.** A week counted once any team had a point. On Thanksgiving Friday
+   week 12 had 5-12 of every team's 13 starters still to play, each one a "DNP". Only weeks
+   the league has closed (its banked games) now count.
+3. **2025 was withheld for nothing.** The banked-record check added median wins to a season
+   that had no median game (7 against the banked 4), and withheld schedule luck and close
+   games. It now adds them only when the season had one.
+4. **`--week` cut every season** in an `--all` run (the web UI passes the current week). It
+   now cuts the current season only.
+
+What moved, 2026 through week 11: Quantum Ferrets' opponent luck z +2.55 → +0.79 and scoring
+luck z −2.99 → −1.61; Cosmic Badgers' opponent luck z −6.14 → −1.45. 2025's schedule luck is
+back at −1.14 (z −0.63), the value recorded at registration. 2024's DNP row is still
+contaminated by the abandoned roster and still unusable.
+
+**Known limit, unchanged in kind:** p-values use the normal curve. With 11-14 weeks and the
+spread estimated from the data, that is close but not exact (the calibration above), and
+eight teams times eight measures will turn up a "significant" one by chance now and then.
+
 ## Addendum: three more, registered 2026-09-29
 
 **Registered 2026-09-29, after weeks 1-3 of 2026 had been played and were visible on the web

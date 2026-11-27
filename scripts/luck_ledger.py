@@ -75,10 +75,25 @@ def _team_names(lid, info):
             for r in rosters}
 
 
+def closed_weeks(counted, per_week):
+    """How many weeks the league has CLOSED: the fewest games any team has banked, in weeks.
+
+    F95: a week used to count as played as soon as any team had a point, so on Thanksgiving
+    Friday week 12 -- three games in, 5 to 12 of every team's 13 starters still to play --
+    went in as a finished week, and every unplayed starter as a starter who did not play.
+    The league's own record moves only when a week closes. None when there is no record."""
+    games = [c.get("games") for c in (counted or {}).values() if c.get("games") is not None]
+    if not games or not per_week:
+        return None
+    return min(games) // per_week
+
+
 def _season_data(lid, info, names, through_week=None):
-    """weekly_scores, pairs, starter_points for a season -- completed weeks only."""
+    """weekly_scores, pairs, starter_points for a season -- completed weeks only. The caller
+    passes `through_week` = the last CLOSED week (closed_weeks), never just a week that has
+    started (F95)."""
     last = int(info.get("settings", {}).get("playoff_week_start") or 15) - 1
-    if through_week:
+    if through_week is not None:
         last = min(last, int(through_week))
     scores, pairs, starters = {}, {}, {}
     for wk in range(1, last + 1):
@@ -287,7 +302,9 @@ def main(argv=None):
                          "via config.KNOWN_LEAGUE_IDS (B20). The flag remains for a league "
                          "that is in no map at all.")
     ap.add_argument("--team", default=None)
-    ap.add_argument("--week", type=int, default=None, help="only count through this week")
+    ap.add_argument("--week", type=int, default=None,
+                    help="only count the current season through this week (finished seasons "
+                         "always count every week, and a week still being played never counts)")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
 
@@ -304,7 +321,14 @@ def main(argv=None):
     payload = []
     for season, lid, info in chain:
         names = _team_names(lid, info)
-        scores, pairs, starters = _season_data(lid, info, names, a.week)
+        per_week = 2 if (info.get("settings") or {}).get("league_average_match") else 1
+        counted = _counted(lid, names)
+        # F95: only weeks the league has closed, and --week cuts the CURRENT season only --
+        # it used to cut 2024 and 2025 in an --all run too.
+        through = closed_weeks(counted, per_week)
+        if a.week and (str(lid) == str(LEAGUE_ID) or a.league_id):
+            through = a.week if through is None else min(through, a.week)
+        scores, pairs, starters = _season_data(lid, info, names, through)
         if not scores:
             print(f"\n=== {season}: no completed weeks ===")
             continue
@@ -326,8 +350,6 @@ def main(argv=None):
         # Closed means the league's own record covers exactly the weeks counted here; the
         # older test (`leg` past the last week) stayed silent on the Tuesday after a week,
         # when Sleeper's `leg` still names it (audit 2026-09-29).
-        per_week = 2 if (info.get("settings") or {}).get("league_average_match") else 1
-        counted = _counted(lid, names) if a.week is None else {}
         closed = bool(counted.get(team)) and counted[team]["games"] == per_week * len(scores)
         banked = counted[team]["wins"] if closed else None
         pa = {t: c["points_against"] for t, c in counted.items()} if closed else None
@@ -345,7 +367,7 @@ def main(argv=None):
                     results.setdefault(w, {})[t] = (h, med)
         res = ledger(scores, pairs, team, starter_points=starters,
                      projections=_projections(season), banked_wins=banked,
-                     results=results or None, points_against=pa)
+                     results=results or None, points_against=pa, median=per_week == 2)
         res["season"] = season
         payload.append(res)
         if not a.json:

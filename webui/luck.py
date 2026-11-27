@@ -75,8 +75,9 @@ def _inputs(root):
 def report(root, team):
     scores, pairs, proj, banked, results, pa = _inputs(root)
     n = len(scores)
+    median = any(r[1] is not None for teams in results.values() for r in teams.values())   # F95
     res = ledger(scores, pairs, team, starter_points=None, projections=proj, banked_wins=banked.get(team),
-                 results=results, points_against=pa) if n else {}
+                 results=results, points_against=pa, median=median) if n else {}
     early = n < MIN_WEEKS_FOR_INFERENCE
     withheld = bool(res.get("banked_disagreement"))
     rows = []

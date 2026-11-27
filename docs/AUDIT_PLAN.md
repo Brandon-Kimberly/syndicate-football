@@ -6877,3 +6877,36 @@ none of it is re-derived:
   25% in the sim, which bids only on lineup deficits. That is F34's churn-channel build,
   scheduled for January with F32; weeks 1-4 are past, so it moves no 2026 prediction. Not built
   here.
+
+### F95 — The luck ledger's z-scores, unfinished weeks, median check and week cutoff — RESOLVED (2026-11-27)
+
+**Found reading the tool's output, not its code.** The owner ran `scripts.luck_ledger` for all
+eight teams on Thanksgiving Friday and asked whether it showed persistent bad luck. Four
+defects, none of them in a registered definition:
+
+1. **The wrong standard error.** Opponent, DNP and scoring luck divided the other seven teams'
+   spread by sqrt(7): the standard error of the league AVERAGE. It answers "how well is the
+   average known", not "how far can one team stray by chance". Cosmic Badgers read z −6.14 on
+   points against over 11 games. Under a null of eight identical teams it rejected at 5% in
+   44% / 42% / 49% of seasons (opponent / DNP / scoring).
+2. **A started week counted as played.** `_season_data` kept any week with a point on the board,
+   so week 12 went in three games deep, and every starter still to play counted as a DNP.
+3. **Median wins in a season without a median game.** `banked_disagreement` added them
+   regardless, so 2025 (pure head-to-head) recomputed to 7 against a banked 4 and its schedule
+   luck and close games were withheld as "rewritten history". The registered value (−1.14)
+   was right all along.
+4. **`--week` applied to every season of an `--all` run**; the web UI fills the current week in,
+   so 2024 and 2025 lost weeks 13-14.
+
+**Fixed (tests first, `f57ad71` red, 8 of 9).** The SE pools every team's weekly difference
+from the league average (sum of squares over N−1 degrees of freedom per week) and divides by
+sqrt(the team's weeks): null rejection 2.0% / 5.3% / 4.3%. A per-team version was tried first
+and rejected (8.0% / 10.3% / 5.7%; error bars from 4 to 13 points for one measure). The
+script counts only the weeks the league has banked (`closed_weeks`), passes the season's
+median flag, and cuts `--week` on the current season only. The web UI's luck page infers the
+median flag from the results it reads. Every delta is unchanged.
+
+**Effect, 2026 weeks 1-11:** Quantum Ferrets opponent z +2.55 → +0.79, scoring z −2.99 → −1.61;
+Cosmic Badgers opponent z −6.14 → −1.45. 2025 schedule luck restored at −1.14 (z −0.63).
+docs/LUCK_LEDGER.md carries the correction beside the registration. Not engine-facing; goldens
+untouched. RESOLVED.
