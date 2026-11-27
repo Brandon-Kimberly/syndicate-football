@@ -340,6 +340,41 @@ the ceiling is the team's own best lineup, so the absolute number is the meaning
 - **Lineups lock per game**, and the projection used is the final pre-game one for the week,
   so a swap that was no longer possible once a game had started is still offered.
 
+### Noted at implementation (2026-11-27, after the numbers were seen)
+
+- **The archive misses some players who played (F97).** Five started 2026 player-weeks (weeks
+  4, 6, 9) have no archived projection yet scored. The registered rule counts them 0, so each
+  makes a bench player look "better" and charges a lineup call that was not one (Turbo Llamas,
+  week 4: a 21.9-point gap). Filling exactly those five from the sync's own pre-kickoff log would
+  move Turbo Llamas' calls from −0.8 to −0.3, Rocket Pandas' from −0.4 to −0.1 and Cosmic
+  Badgers' from −1.3 to −1.0; the rest within 0.03. Not adopted: changing a registered rule after
+  seeing the numbers needs its own registration and the owner's ruling. The same five feed
+  Addendum 2's players-vs-projection part (up to 0.5 wins of total luck, Turbo Llamas).
+- **Not the team page's "Before the games".** Same solver, different projection: the team page
+  prices on the last projection logged before the week's FIRST kickoff; the archive keeps each
+  player's final pre-game one. A player ruled out on Saturday is priced there and 0 here, so the
+  two gaps differ, in both directions (2026: 1.0 to 5.0 points a week here, 1.5 to 5.9 there).
+- **Checked on the real league:** every 2026 rostered player has eligibility in the cache; the
+  solver never found less than what was started (no eligibility disagreement); in weeks 10-11 no
+  best lineup used a benched player who is on IR now with a projection above 0.
+
+### Readings at implementation (2026-11-27), for the record
+
+2026 through week 11, every team (luck as registered in Addendum 2, unchanged):
+
+| team | wins | projected to earn (started) | roster's best lineups earn | lineup calls, wins | points a week | weeks of 11 a better lineup was there |
+|---|---|---|---|---|---|---|
+| Cosmic Badgers | 10 | 8.4 | 9.7 | −1.26 | −5.0 | 10 |
+| Turbo Llamas | 15 | 12.8 | 13.6 | −0.76 | −2.9 | 9 |
+| Neon Walruses | 16 | 10.9 | 11.6 | −0.63 | −2.4 | 7 |
+| Iron Wombats | 9 | 11.3 | 11.8 | −0.52 | −1.9 | 9 |
+| Rocket Pandas | 17 | 11.5 | 11.9 | −0.38 | −1.4 | 5 |
+| Polar Yetis | 4 | 9.4 | 9.7 | −0.36 | −1.5 | 8 |
+| Crimson Marmots | 7 | 9.8 | 10.1 | −0.32 | −1.1 | 6 |
+| Quantum Ferrets | 10 | 13.8 | 14.1 | −0.27 | −1.0 | 7 |
+
+Quantum Ferrets and its earlier names: lineup calls 2024 −0.31, 2025 −0.19, 2026 −0.27 wins.
+
 ## Usage
 
 ```
