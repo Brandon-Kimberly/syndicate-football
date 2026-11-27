@@ -14,6 +14,7 @@ class worth a mechanical guard.
 """
 import os
 import re
+import shutil
 import subprocess
 import unittest
 
@@ -24,6 +25,23 @@ try:
     import yaml
 except ImportError:                                    # pragma: no cover
     yaml = None
+
+
+def _bash_exe():
+    """An absolute path to a real bash, or None (F90). On Windows a bare "bash" resolves via
+    System32 first -- the WSL launcher, which fails without a distro (the CI runner) -- so
+    find Git for Windows' bash next to git itself; elsewhere PATH is fine."""
+    if os.name != "nt":
+        return shutil.which("bash")
+    git = shutil.which("git")
+    if git:
+        d = os.path.dirname(os.path.realpath(git))
+        for _ in range(3):                # git.exe lives in Git\cmd or Git\mingw64\bin
+            candidate = os.path.join(d, "bin", "bash.exe")
+            if os.path.isfile(candidate):
+                return candidate
+            d = os.path.dirname(d)
+    return None
 
 
 def _bash_blocks():
@@ -53,6 +71,9 @@ class TestWorkflowBashParses(unittest.TestCase):
     def test_every_bash_run_block_parses(self):
         blocks = _bash_blocks()
         self.assertGreater(len(blocks), 10, "found suspiciously few bash blocks to check")
+        bash = _bash_exe()
+        if bash is None:                                  # pragma: no cover
+            self.skipTest("no real bash found for the syntax guard (Git for Windows on Windows)")
         failures = []
         for fname, step, script in blocks:
             # ${{ ... }} is GitHub template syntax, substituted before bash ever sees it.
@@ -60,7 +81,7 @@ class TestWorkflowBashParses(unittest.TestCase):
             try:
                 # bytes, not text: text mode would translate \n -> \r\n on Windows and
                 # the stray CRs produce bogus parse errors of their own.
-                proc = subprocess.run(["bash", "-n", "-"], input=script.encode("utf-8"),
+                proc = subprocess.run([bash, "-n", "-"], input=script.encode("utf-8"),
                                       capture_output=True, timeout=30)
             except (FileNotFoundError, subprocess.TimeoutExpired) as ex:  # pragma: no cover
                 self.skipTest(f"bash unavailable for the syntax guard ({ex})")

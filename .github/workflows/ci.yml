@@ -36,8 +36,12 @@ jobs:
       - name: Lint (correctness rules only -- see the ruff pin's comment in requirements.txt)
         run: python -m ruff check --select F401,F841,F821,B006,E722 fantasy_sim scripts tests webui
       - name: Full suite under branch coverage
+        # F90: pwsh takes the step result from the LAST native command only, so without the
+        # explicit check a failing suite went green whenever the report printed (every run
+        # from at least 2026-09-16 to 2026-11-27). tests/test_workflows guards the pattern.
         run: |
           python -m coverage run -m unittest discover tests
+          if ($LASTEXITCODE) { python -m coverage report; exit $LASTEXITCODE }
           python -m coverage report
       - name: Coverage ratchet (fantasy_sim package; committed floor, 0.5-point band)
         # The band exists because a zero-tolerance floor turns rounding noise into build
