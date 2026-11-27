@@ -5,16 +5,25 @@ every scheduled canonical-run since 2026-09-04 (n=42): median lag 3.1h, October 
 maximum 6.1h, and rising. With the first fire at 11:30 UTC, week 5's run started 18 minutes
 before the 17:00 UTC deadline and a manual dispatch produced the covering row; week 3's row is
 stamped 8 minutes after it. These tests hold the fire times to the measured lag, not the assumed
-one."""
+one.
+
+Re-measured 2026-11-27 over the 18 scheduled Sunday fires since 2026-10-18, attributing each
+Sunday's runs IN ORDER to the 09:30 / 10:30 / 12:30 crons (GitHub fires them in order): lag
+3.5-3.9h on 10-18, 7.4-7.75h on 11-22, median 6.31h, still rising about half an hour a week.
+The first fire started 05:23, 05:47, 08:10, 08:07, 08:28, 09:14 PT -- the last landing its row
+34 minutes before the 10:00 PT deadline. The old constants (6.1 / 3.5) passed a schedule that
+was about to miss."""
 import os
 import re
 import unittest
 
 WORKFLOW = os.path.join(os.path.dirname(__file__), "..", ".github", "workflows", "canonical-run.yml")
 
-# Measured 2026-10-13 from `gh run list --workflow canonical-run` (schedule events only).
-WORST_LAG_H = 6.1       # maximum observed start delay after the cron time
-TYPICAL_LAG_H = 3.5     # October median
+# Measured 2026-11-27 from `gh run list --workflow canonical-run --event schedule`: Sunday fires
+# since 2026-10-18, attributed in order to their crons (was 6.1 / 3.5, measured 2026-10-13).
+# Other weekdays reached 9.06h, but their windows are a day or more wide.
+WORST_LAG_H = 7.75      # maximum observed Sunday start delay after the cron time (2026-11-22)
+TYPICAL_LAG_H = 6.31    # median Sunday lag, 2026-10-18 .. 11-22
 # Week 5's dispatched run: started 16:28 UTC, canonical row logged 16:46 UTC.
 RUN_H = 20 / 60.0
 # Run 2's deadline is Sunday 10:00 Pacific: 17:00 UTC in PDT (the tighter regime), 18:00 in PST.
