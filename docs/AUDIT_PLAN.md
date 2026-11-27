@@ -6928,7 +6928,7 @@ the across-seasons total applies to any team. The fake Sleeper gives each old ro
 `u{rid}`; the absent-owner case moves one owner out. Not engine-facing; goldens untouched.
 RESOLVED.
 
-### F97 — Sleeper's projection archive omits some players who then played — OPEN (2026-11-27, owner ruling needed)
+### F97 — Sleeper's projection archive omits some players who then played — RESOLVED (2026-11-27, Addendum 4)
 
 **Found implementing Addendum 3** (`docs/LUCK_LEDGER.md`), cross-checking its lineup gaps against
 the team page's "Before the games". In 2026 weeks 1-11, five started player-weeks (two in week 4,
@@ -6949,4 +6949,14 @@ WRONG the other way: most of those were ruled out after Thursday and the archive
 then scored is priced from the sync's last pre-kickoff projection; 2024-25, which have no such log,
 keep 0" -- registered before the code, tests first. Until then the numbers stand as registered and
 the page reads them as such. OPEN.
+
+**Resolved by the owner's ruling, same day.** docs/LUCK_LEDGER.md Addendum 4 (committed `4f08400`
+before the code; tests first, red `2aa6085`): a rostered player the archive prices at 0 or omits,
+who scored a nonzero amount that week, takes the `sleeper_mean` of the sync's newest projection-log
+row for him before that week's first kickoff; no such row, or one at 0, stays 0; seasons without
+the log (2024, 2025) are unchanged; an archived projection is never replaced; the count is reported
+(`filled_from_log`). On the real league exactly the five player-weeks above were filled. Turbo
+Llamas' lineup calls −0.76 → −0.31 and luck +2.16 → +1.64; Quantum Ferrets' luck −3.79 → −3.52 and
+across 2024-26 −7.5 → −7.3 wins (1 in 21 → 1 in 18). The Addendum 2 and 3 readings for 2026 are
+superseded by Addendum 4's, which the file records. Not engine-facing; goldens untouched. RESOLVED.
 

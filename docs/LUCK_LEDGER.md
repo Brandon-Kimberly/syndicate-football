@@ -412,6 +412,25 @@ pre-game one the archive keeps for everyone else, so a filled player carries the
 A player who played but whom the sync never logged (not rostered at any sync before the first
 kickoff) still counts 0, and so does one who scored exactly 0.00 while playing.
 
+### Readings at implementation (2026-11-27), superseding Addenda 2 and 3's for 2026
+
+2026 weeks 1-11, every team. Five player-weeks filled (weeks 4, 6, 9; all five started), σ 24.77 →
+25.65. 2024 and 2025 have no log and are unchanged.
+
+| team | wins | projected to earn | best lineups earn | lineup calls (wins) | points a week | total luck | how unusual | rank played → luck out |
+|---|---|---|---|---|---|---|---|---|
+| Cosmic Badgers | 10 | 8.6 | 9.6 | −1.02 | −4.2 | +1.38 | 1 in 3 | 5th → 8th |
+| Neon Walruses | 16 | 10.7 | 11.3 | −0.61 | −2.4 | +5.27 | 1 in 22 | 2nd → 5th |
+| Iron Wombats | 9 | 11.1 | 11.6 | −0.50 | −1.9 | −2.14 | 1 in 4 | 6th → 4th |
+| Polar Yetis | 4 | 9.3 | 9.6 | −0.35 | −1.5 | −5.26 | 1 in 21 | 8th → 7th |
+| Turbo Llamas | 15 | 13.4 | 13.7 | −0.31 | −1.2 | +1.64 | 1 in 2 | 3rd → 2nd |
+| Crimson Marmots | 7 | 9.6 | 9.9 | −0.30 | −1.1 | −2.63 | 1 in 3 | 7th → 6th |
+| Quantum Ferrets | 10 | 13.5 | 13.8 | −0.26 | −1.0 | −3.52 | 1 in 8 | 4th → 1st |
+| Rocket Pandas | 17 | 11.7 | 11.9 | −0.14 | −0.6 | +5.27 | 1 in 23 | 1st → 3rd |
+
+Quantum Ferrets and its earlier names, across 2024-2026: −7.3 wins of luck (was −7.5), about 1 in
+18 three-season runs (was 1 in 21), "unusual".
+
 ## Usage
 
 ```

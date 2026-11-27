@@ -101,13 +101,14 @@ def closed_weeks(counted, per_week):
     return min(games) // per_week
 
 
-def _season_data(lid, info, names, through_week=None, ids=None, rosters=None):
+def _season_data(lid, info, names, through_week=None, ids=None, rosters=None, played=None):
     """weekly_scores, pairs, starter_points for a season -- completed weeks only. The caller
     passes `through_week` = the last CLOSED week (closed_weeks), never just a week that has
     started (F95). `ids`, when given, is filled with {week: {team: [starter player id, ...]}}
     in the same order as starter_points (the wins accounting prices those players), and
     `rosters` with {week: {team: [every player id on the roster that week]}} (Sleeper's matchup
-    `players`, IR slots included: Addendum 3's roster)."""
+    `players`, IR slots included: Addendum 3's roster), and `played` with {week: {player id:
+    points}} for every player Sleeper scored that week (Addendum 4: did he play)."""
     last = int(info.get("settings", {}).get("playoff_week_start") or 15) - 1
     if through_week is not None:
         last = min(last, int(through_week))
@@ -133,6 +134,8 @@ def _season_data(lid, info, names, through_week=None, ids=None, rosters=None):
                 ids.setdefault(wk, {})[t] = sids
             if rosters is not None:
                 rosters.setdefault(wk, {})[t] = [str(p) for p in (m.get("players") or []) if p and str(p) != "0"]
+            if played is not None:
+                played.setdefault(wk, {}).update({str(p): float(v or 0.0) for p, v in pp.items()})
             if m.get("matchup_id") is not None:
                 by_mid[m["matchup_id"]].append(t)
         if not live:
@@ -140,6 +143,8 @@ def _season_data(lid, info, names, through_week=None, ids=None, rosters=None):
                 ids.pop(wk, None)
             if rosters is not None:
                 rosters.pop(wk, None)
+            if played is not None:
+                played.pop(wk, None)
             continue                     # week hasn't been played
         scores[wk] = row
         starters[wk] = srow
@@ -333,6 +338,69 @@ def _week_projection(season, week, settings):
 
 
 PLAYERS_CACHE = os.path.join("data", "current", "sleeper_players_cache.json")
+PROJECTION_LOG = os.path.join("data", "logs", "projection_log.jsonl")
+NFL_SCHEDULE = os.path.join("data", "current", "nfl_schedule.json")
+
+
+def _prekickoff_log(season, log_path=None, schedule_path=None):
+    """Addendum 4: {(week, player id): sleeper_mean} from the sync's projection log -- the newest
+    row for that player and week logged before the week's FIRST kickoff (the row the team page's
+    "Before the games" uses). {} for a season the log does not cover, or without kickoffs."""
+    try:
+        with open(schedule_path or NFL_SCHEDULE, encoding="utf-8") as fh:
+            stamps = ((json.load(fh) or {}).get("_meta") or {}).get("kickoffs") or {}
+    except (OSError, ValueError):
+        return {}
+    first = {}
+    for wk, times in stamps.items():
+        times = sorted(str(t).replace("+00:00", "Z") for t in (times or []) if t)
+        if times:
+            try:
+                first[int(wk)] = times[0]
+            except (TypeError, ValueError):
+                continue
+    out, at = {}, {}
+    try:
+        with open(log_path or PROJECTION_LOG, encoding="utf-8") as fh:
+            lines = fh.readlines()
+    except OSError:
+        return {}
+    for line in lines:
+        try:
+            r = json.loads(line)
+            wk, pid = int(r["week"]), str(r["player_id"])
+        except (ValueError, KeyError, TypeError):
+            continue
+        stamp, ko = str(r.get("synced_at") or ""), first.get(wk)
+        if str(r.get("season")) != str(season) or not stamp or ko is None or stamp >= ko:
+            continue                             # another season, or logged after the first kickoff
+        if (wk, pid) not in at or stamp >= at[(wk, pid)]:
+            at[(wk, pid)] = stamp
+            out[(wk, pid)] = r.get("sleeper_mean")
+    return out
+
+
+def _fill_gaps(week, proj, roster, played, log):
+    """Addendum 4: `proj` with every player in `roster` the archive prices at 0 or omits, who
+    scored (not 0.00) that week, priced from the pre-kickoff log when it holds more than 0.
+    Returns (projection, the ids filled). An archived projection is never replaced. `log` may
+    be a callable: it is read only when there is a gap to fill."""
+    out, filled = proj, []
+    for pid in roster:
+        if proj.get(pid) or not (played or {}).get(pid):
+            continue
+        if callable(log):
+            log = log()
+        try:
+            mean = float(log.get((week, pid)) or 0.0)
+        except (TypeError, ValueError):
+            mean = 0.0
+        if mean > 0:
+            if out is proj:
+                out = dict(proj)
+            out[pid] = mean
+            filled.append(pid)
+    return out, filled
 NOT_STARTING = ("BN", "IR", "TAXI")
 
 
@@ -365,20 +433,33 @@ def _best_projection(roster, proj, slots, elig):
     return total
 
 
-def _projected_lineups(season, lid, info, ids, starters, rosters=None, elig=None):
+def _projected_lineups(season, lid, info, ids, starters, rosters=None, elig=None, played=None, log=None):
     """(projected {week: {team: total}}, detail {week: {team: [(projected, scored), ...]}},
     best {week: {team: best lineup's projection}} or None) for every started player. A week
     Sleeper serves no projections for is left out. `best` needs the rosters, the eligibility
-    and the season's starting slots (Addendum 3); without any of them it is None."""
+    and the season's starting slots (Addendum 3); without any of them it is None. `played` and
+    `log` fill the archive's gaps (Addendum 4); the fourth value is how many player-weeks
+    were filled."""
     weeks = sorted(ids)
     settings = _settings_by_week(season, lid, info, weeks)
     slots = starting_slots(info)
     can_solve = bool(rosters and elig and slots)
-    projected, detail, best = {}, {}, {}
+    projected, detail, best, filled = {}, {}, {}, set()
+    memo = {}
+
+    def lazy():
+        if "log" not in memo:
+            memo["log"] = (log() if callable(log) else log) or {}
+        return memo["log"]
+
     for w in weeks:
         proj = _week_projection(season, w, settings[w])
         if not proj:
             continue
+        if log is not None:                      # Addendum 4: every roster player of the week
+            everyone = [p for t in ids[w] for p in (((rosters or {}).get(w) or {}).get(t) or ids[w][t])]
+            proj, got = _fill_gaps(w, proj, everyone, (played or {}).get(w), lambda: lazy())
+            filled.update((w, p) for p in got)
         for t, pids in ids[w].items():
             got = (starters.get(w) or {}).get(t) or []
             pairs = [(float(proj.get(p, 0.0)), float(got[i]) if i < len(got) else 0.0)
@@ -388,7 +469,7 @@ def _projected_lineups(season, lid, info, ids, starters, rosters=None, elig=None
             roster = ((rosters or {}).get(w) or {}).get(t)
             if can_solve and roster:
                 best.setdefault(w, {})[t] = _best_projection(roster, proj, slots, elig)
-    return projected, detail, (best if can_solve and best else None)
+    return projected, detail, (best if can_solve and best else None), len(filled)
 
 
 def _save_accounting(season, acc):
@@ -412,7 +493,7 @@ def team_view(acc, team):
     if not acc or team not in (acc.get("teams") or {}):
         return None
     return {k: acc[k] for k in ("weeks", "left_out", "median", "sigma", "simulations", "seed", "early", "standings")} \
-        | {"team": team, **acc["teams"][team]}
+        | {"filled_from_log": acc.get("filled_from_log") or 0, "team": team, **acc["teams"][team]}
 
 
 def _wins(v):
@@ -459,6 +540,10 @@ def render_accounting(view, team_label, ov=None):
     render_lineup_calls(view)
     if view.get("left_out"):
         print(f"    Weeks with no projections, left out: {', '.join(str(w) for w in view['left_out'])}.")
+    if view.get("filled_from_log"):
+        n = view["filled_from_log"]
+        print(f"    {n} player-week{'s' if n != 1 else ''} the projection archive missed, for players who then "
+              f"played, priced from the sync's last pre-kickoff projection (Addendum 4).")
 
 
 def render_lineup_calls(view):
@@ -614,8 +699,8 @@ def main(argv=None):
         through = closed_weeks(counted, per_week)
         if a.week and (str(lid) == str(LEAGUE_ID) or a.league_id):
             through = a.week if through is None else min(through, a.week)
-        ids, rosters = {}, {}
-        scores, pairs, starters = _season_data(lid, info, names, through, ids=ids, rosters=rosters)
+        ids, rosters, played = {}, {}, {}
+        scores, pairs, starters = _season_data(lid, info, names, through, ids=ids, rosters=rosters, played=played)
         if not scores:
             _say(a.json, f"\n=== {season}: no completed weeks ===")
             continue
@@ -658,10 +743,13 @@ def main(argv=None):
         # the wins accounting (Addendum 2): computed for the whole league, saved for the web UI
         acc = None
         if ids:
-            projected, detail, best = _projected_lineups(season, lid, info, ids, starters, rosters, elig)
+            projected, detail, best, n_filled = _projected_lineups(season, lid, info, ids, starters, rosters, elig,
+                                                                   played, lambda s=season: _prekickoff_log(s))
             if projected:
                 acc = accounting(scores, projected, pairs, results=results or None,
                                  median=per_week == 2, starters=detail, keep_sims=True, best=best)
+            if acc:
+                acc["filled_from_log"] = n_filled      # Addendum 4, reported beside the weeks left out
         if acc:
             sims = acc["teams"].get(team, {}).get("_sims_total")
             for t in acc["teams"].values():
