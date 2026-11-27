@@ -161,7 +161,7 @@ class TestTheToolForm(Case):
         from webui.tools import TOOLS
         self.assertNotIn("week", [f.name for f in TOOLS["luck_ledger"].fields])
         body = self.get("/tools/luck_ledger", "dev")
-        self.assertRegex(body, r'<input type="checkbox" id="f_all"[^>]*checked')
+        self.assertRegex(body, r'<input type="checkbox" id="f_all"[^>]*\bchecked\b')
         self.assertNotIn('id="f_week"', body)
 
     def test_the_tick_is_honoured_either_way(self):
