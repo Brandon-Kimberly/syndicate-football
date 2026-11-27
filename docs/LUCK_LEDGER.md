@@ -279,6 +279,67 @@ Quantum Ferrets and its earlier names; 2026 through week 11:
 
 Together −7.5 wins over three seasons (about 1 in 21 three-season runs).
 
+## Addendum 3: roster versus lineup calls, registered 2026-11-27
+
+**Registered after the owner saw the Addendum 2 numbers**, the same day, and in answer to the
+limit Addendum 2 named itself: "Lineup calls are inside `E`, not in the luck." Committed
+before any code computes it. It adds a DECISION measure beside the luck; it changes no luck
+part, no luck definition and no "how unusual".
+
+### Inputs, per season, per team, per week
+
+- **Roster `R`** = Sleeper's matchup `players` for that team-week: everyone on the roster that
+  week as Sleeper recorded it. That list includes players in IR slots, and Sleeper does not
+  archive who was on IR in a past week, so they stay in (see below).
+- **Slots** = that season's league `roster_positions` with `BN`, `IR` and `TAXI` removed, as
+  Sleeper serves them: 2024 fifteen (two QB, three RB, three WR, two TE, three FLEX, K, DEF),
+  2025 eleven (QB, two RB, two WR, TE, three FLEX, K, DEF), 2026 thirteen (QB, two RB, two WR,
+  TE, three FLEX, K, DL, LB, DB).
+- **Eligibility** = each player's Sleeper `fantasy_positions` from the sync's players cache
+  (`data/current/sleeper_players_cache.json`), read through `config.eligible_slots`; FLEX takes
+  RB, WR and TE (`webui.trade`). A player the cache does not know is eligible for no slot.
+- **Projection** = exactly Addendum 2's: Sleeper's archived weekly projection, scored under the
+  settings in force that week. **A player with no projection counts 0**, started or not.
+
+### The definitions
+
+- **`P_best`** = the highest total projection any legal assignment of `R` to the slots
+  reaches, solved exactly by the web UI's existing solver (`webui.trade.best_lineup`, scipy's
+  `linear_sum_assignment`; the team page's "Before the games" uses the same one), and never
+  below `P`: the lineup actually started was legal in Sleeper, so `P_best = max(solved, P)`.
+  **Ties** cannot matter: only the total is used, never which lineup reached it.
+- **`σ`** = Addendum 2's, unchanged (from the started lineups).
+- **Roster-earned expected wins `E_best`** = `E_h_best + E_m_best`.
+  `E_h_best` = games × the mean over weeks and opponents of Φ((P_best_me − P_opp) / (σ√2)),
+  **the opponents keeping the projections they started**: one team's calls are priced with
+  everyone else's as they were. `E_m_best` (median seasons only) = Σ weeks of P(my
+  `P_best + σε` finishes in the top half against the others' `P + σε`), from the SAME 4,000
+  simulated seasons and the SAME draws: one `ε` per team-week serves both `E_m` and `E_m_best`,
+  so the two differ only by the projections.
+- **Lineup calls, in wins** = `E − E_best`. Zero or negative by construction: Φ increases,
+  `P_best ≥ P`, and with shared draws a higher score never finishes lower. Also reported:
+  **lineup calls in points a week** = the mean over weeks of `P − P_best`.
+- **The identity:** actual wins − `E_best` = lineup calls + total luck. Every luck part is
+  still measured against `E`, the lineups started, exactly as registered in Addendum 2.
+
+**Lineup calls are not luck.** They are never added into the luck total, carry no "1 in N",
+and are labelled as decisions wherever they appear. Unlike the luck parts they do not sum to
+zero across the league (every team's is zero or below) and are not differenced against it:
+the ceiling is the team's own best lineup, so the absolute number is the meaningful one.
+
+### What it cannot do
+
+- **Best by the projection everyone could see**, not by what the manager knew. Benching a
+  player on later news the projection had not caught is charged as a lineup call; so is the
+  reverse luck of a hunch.
+- **IR players are in `R`.** One Sleeper projected above 0 could be "started" by `P_best`
+  although moving him off IR needed a roster move. Sleeper projects most IR players at 0.
+- **Eligibility is today's**, not that week's: a player redesignated mid-season is priced at
+  his current positions; a player missing from the cache is eligible nowhere.
+- **No roster moves**: the best lineup is drawn from that week's roster, never free agents.
+- **Lineups lock per game**, and the projection used is the final pre-game one for the week,
+  so a swap that was no longer possible once a game had started is still offered.
+
 ## Usage
 
 ```
