@@ -261,3 +261,4 @@
 {"espn_rows": 113, "git_commit": "2b052a6", "schema_version": 1, "season": "2026", "synced_at": "2026-11-25T23:10:53Z", "total_rows": 150, "week": 12}
 {"espn_rows": 112, "git_commit": "3720332", "schema_version": 1, "season": "2026", "synced_at": "2026-11-26T22:37:28Z", "total_rows": 149, "week": 12}
 {"espn_rows": 112, "git_commit": "9492b0e", "schema_version": 1, "season": "2026", "synced_at": "2026-11-26T23:07:54Z", "total_rows": 149, "week": 12}
+{"espn_rows": 109, "git_commit": "93767c6", "schema_version": 1, "season": "2026", "synced_at": "2026-11-27T22:20:56Z", "total_rows": 146, "week": 12}
