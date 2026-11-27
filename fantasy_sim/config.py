@@ -980,9 +980,10 @@ SIM_CONFIG = {
     # environment is real; Sleeper just already holds ~71% of it (QB 0.79, RB 0.44, WR -0.04, TE 0.59: per
     # position too noisy to split). The engine's baseline is made environment-neutral at load,
     # mean / (1 + share x (ratio - 1)) with ratio = the team's implied total over the week's mean, and
-    # then takes the one full ratio it always applied. UNVERIFIED beyond four weeks of one season
-    # (the interval on the share is roughly 0.35-1.07): scripts.env_check re-measures it as 2026 accrues;
-    # 0 restores the old behaviour exactly.
+    # then takes the one full ratio it always applied. Re-measured 2026-11-27 on weeks 1-11
+    # (scripts.env_check): share 0.70, 95% 0.48-0.91, n = 1175 -- the configured 0.71 holds and 1.0 is now
+    # excluded. F92 (2026-11-27): the neutralisation runs AFTER the Bayesian blend, which had been putting
+    # ~30% of it back. 0 restores the pre-F89 behaviour exactly.
     "ENV_SHARE_IN_PROJECTION": 0.71,
     "CORRELATIONS": {
         "QB_WR1": 0.4, "QB_WR2": 0.315, "QB_TE": 0.35, "QB_RB": 0, "WR_WR": -0.004

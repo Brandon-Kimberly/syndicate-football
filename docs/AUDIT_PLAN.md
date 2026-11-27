@@ -2618,7 +2618,7 @@ the study script (`handcuff_study*.py`, session scratchpad) is the measurement p
 Caveats: RB only (WR/TE volume spreads broadly and was not measured); position labels for
 2025 came from the current cache.
 
-### F25 — Team-week interval calibration: diagnosed MIXED; gate corrected; engine held (2026-09-03)
+### F25 — Team-week interval calibration: diagnosed MIXED; gate corrected; engine held (2026-09-03) — RESOLVED by F93 (2026-11-27)
 
 > **Baseline annotation (2026-09-03, pre-season audit):** the r ≈ [1.15, 1.34] bracket
 > below — and the "quoted 80% is really ~74–78%" mapping the locked
@@ -6771,3 +6771,109 @@ read 8). **Not demonstrated:** a red suite turning the step red on the runner; t
 guard test and pwsh's documented exit semantics.
 
 Suite 2473 → 2475 (characterisation, 2 red of 2). Goldens unchanged. RESOLVED.
+
+### F91 — The point spread moved the script multiplier on no evidence — RESOLVED (2026-11-27) — MAJOR
+
+`_script_multiplier` added +0.15 to a favourite's RB, −0.10 to an underdog's, +0.10 to an
+underdog's QB/WR/TE and +0.10 to a favourite's DL/DEF. No source anywhere; labelled UNVERIFIED
+in the code since 2026-10-12 and named the "first suspects" in `docs/audit/FORECAST_WATCH.md`,
+whose pre-registered bar read: if favoured-team RBs keep coming in well below their multiplied
+expectation over at least six weeks, the bonus gets a measurement.
+
+**Measured (2026 weeks 6-11, the six weeks with per-player canonical records; healthy quoted
+starters vs first-recorded league-scored points):**
+
+| group | n | mean script | actual − multiplied | actual − without the spread term |
+|---|---|---|---|---|
+| RB, favoured | 42 | 1.153 | −4.04 (se 1.45), 5/6 weeks negative | −1.44 |
+| QB, script > 1 | 17 | 1.054 | −5.45 (se 1.74) | −4.20 |
+| TE, script > 1 | 21 | 1.064 | −3.68 (se 1.11), 6/6 | −2.94 |
+| WR, script > 1 | 49 | 1.064 | −2.91 (se 1.02) | −2.19 |
+| RB, underdog | 32 | 0.918 | +1.00 | −0.09 |
+
+Every boosted group missed low and the penalised one missed high; without the term the RB
+residuals sit within about one standard error of zero. The spread is already inside the
+implied total the environment ratio applies. **Removed**; the defensive-tier term (measured
+2017-2025, `DEF_TIER_*`) is unchanged. Tests first (`8cfb5f2` red, `b542d0e` fix). The 2025
+backtest cannot see this change: its environment is flat, spread 0.
+
+### F92 — The Bayesian blend put back the environment the neutralisation took out — RESOLVED (2026-11-27) — MAJOR
+
+`_neutralize_projection_environment` (F89) ran BEFORE `_apply_bayesian_updates`, which pulls
+each mean toward the player's realised average, and realised scores carry their games' full
+environment. **Measured:** on 2026 weeks 6-11 the engine's healthy quoted starters were lifted
++1.21 points over Sleeper's projection (environment +0.88, script +0.24) while actual scores
+landed at Sleeper's number (−0.28, se 0.28): a −1.49 per-starter over-quote. The slope of
+baseline/Sleeper on (env_ratio − 1) was −0.50 where neutralisation alone gives about −0.71
+(about 70% surviving, the blend's prior weight), and starters in games with ratio 1.2+ were
+lifted ~17% over Sleeper where a 0.71 share intends ~7%. Ruled out first: a LEVEL mismatch
+(the across-NFL-team mean ratio is 0.99-1.02 every week); a wrong share (`scripts.env_check`
+re-measured **0.70, 95% 0.48-0.91, n = 1175** against 0.71 configured, and the interval now
+excludes 1.0); and a selection effect (Sleeper's own projection for the engine's starters is
+nearly unbiased, −0.37, se 0.29).
+
+**Fixed:** the neutralisation now runs after the blend, so it strips the environment from both
+halves. The team-level quote had been unbiased (mean z −0.04, se 0.09) only through offsetting
+errors: the availability discount (−10.9 per team) and managers' real lineups beating the
+engine's quoted lineup by ~7. Tests first (`8cfb5f2` red: 8 on-projection weeks dragged the
+neutralised 15.79 back to 19.16; `29be146` fix). Invisible to the 2025 backtest, whose vegas
+file is empty.
+
+### F93 — The backtest-fitted interval inflation was applied to live projections — RESOLVED (2026-11-27) — MAJOR
+
+B7's `INTERVAL_INFLATION` (aleatoric ×1.41) was fitted on the 2025 points backtest, whose every
+baseline is a positional-only prior (Sleeper keeps no historical week-specific projections).
+Live baselines are week-specific projections. **Measured:** 88 pre-kickoff canonical team-weeks
+(weeks 1-11) at rms z 0.77, 80% band 90%, 50% band 65%; 578 healthy starter-weeks at rms z
+0.72, 84% inside 1 sd, 100% inside 2 sd. FORECAST_WATCH's "too wide" bar (above 90% for two
+checks running) was met at weeks 5, 6 and 7. Removing the factor's total-sd scale (1.272,
+B7's own 62.5/37.5 split) projects the 88 team-weeks to rms z 0.98, 82% / 55%. This also
+answers F25's open calibration question for the live engine.
+
+**Fixed:** `_inflate_aleatoric` widens only baselines that are not this week's projection (a
+`projection_source` or `auto_imputed`), the convention the neutralisation already used;
+`backtest_season` marks its priors `positional_prior`, so the backtest keeps 1.41
+byte-for-byte. Tests first (`572a826` red, `504c23c` fix); `test_interval_inflation` and
+`test_distributions` updated where they encoded the old everywhere scope, with the reason in
+each. **UNVERIFIED for weeks 12+:** the 82% is arithmetic on recorded quotes;
+`scripts.forecast_accuracy` is the check.
+
+**Open residual (found at the golden regeneration, `1f20947`):** in the week01 golden,
+narrowing the live intervals raises simulated season points +1.2% (+1.0% over 120 seasons).
+Every draw is unbiased under both scopes (realised/expected 1.002) and the 80-point cap is not
+the cause; the rise is carried by fewer unfilled lineup slots (0.539 → 0.516 per lineup). The
+link from score variance to roster holes is NOT traced: the random stream is shared and
+standings (which variance moves) gate the weeks 6-10 trade attempts, so paths diverge, but
+trades complete ~0.2 per season and cannot carry 4% alone.
+
+### F94 — The 2026 weeks 1-11 measurement pass: F25's questions, FORECAST_WATCH's bars, F30 and F31 — MEASURED (2026-11-27)
+
+Owner-requested, measurement first; F91-F93 are the fixes it produced. The rest, recorded so
+none of it is re-derived:
+
+- **F25's three pre-registered questions.** (1) Persistent under-quote: refuted, weekly mean z
+  −0.04 (se 0.09), 4/11 weeks positive; the undiscounted `expected_pre_total` would over-quote
+  (t −1.85), so F89's availability discount is doing real work. (2) Do the lines help some legs
+  and hurt others: untestable as framed, since every row from week 2 had real lines. Brier for
+  the Wednesday pre-kickoff rows: head-to-head 0.209, median leg 0.217 (coin flip 0.25).
+  (3) Thin, RB-led upside tail: reversed, the tails were too WIDE (F93). The week-1 "team wide,
+  player narrow" puzzle was n = 8; at n = 88 / 578 both were wide.
+- **FORECAST_WATCH team bar.** Quantum Ferrets (−13.7, t −2.04) and Neon Walruses (+21.3,
+  t +2.14) are beyond 2 se, but the multipliers do not drive either gap, so neither is a
+  "problem" under the pre-registered bar.
+- **F30 revisit (11 lead-RB absences in 2026, past the ~5 trigger).** Capture 0.98 (95% CI
+  0.56-1.40) with the realised pre-absence denominator, 0.97 with F7's logged projection
+  (n = 10); placebo +0.05 over 202 windows. This does NOT move the constant: F89 re-measured RB
+  capture over ten seasons at 0.629 [0.542, 0.714], n = 316, and 0.65 is inside that and inside
+  2026's interval. (A first comparison in-session against F30's superseded "+1.53" was wrong and
+  is withdrawn.) **F30's revisit plan cannot be run as written:** the F7 projection log is
+  ROSTERED-ONLY (a median of one RB per NFL team), so backups' baselines are not in it; the
+  measurement used the any-given-stat full-NFL stat lines `scripts.env_check` already fetches.
+- **F31 re-measure (102 claims, past the ~100 trigger).** With the 2026 blend fed in (the golden
+  harness patches `read_faab_observations` to `{}`, so it was fed at `blend_faab_profiles`), the
+  week01 simulated season spends $631 against $646 on priors alone: further UNDER [650, 800]
+  (real 2026: $664 spent with $136 left; 2025: $728). Claims (111) and bid sizes stay in band.
+  The structural gap is timing: 52% of real 2026 claims came in weeks 1-4 (2025: 39%) against
+  25% in the sim, which bids only on lineup deficits. That is F34's churn-channel build,
+  scheduled for January with F32; weeks 1-4 are past, so it moves no 2026 prediction. Not built
+  here.
