@@ -108,6 +108,18 @@ class TestTheLuckPage(Case):
         self.assertIn("Weeks have finished since this was worked out", text)
         self.assertIn('href="/tools/luck_ledger"', self.get("/luck", "simple"))
 
+    def test_a_stale_file_says_it_catches_up_on_its_own_in_both_views(self):
+        """A good local sync now reruns the luck ledger (fantasy_sim.luck_refresh), so the page
+        says so -- in each view's own words, "sync" being developer vocabulary."""
+        self.save(_league_accounting(self.teams, [1]))
+        for mode, words in (("dev", "The next sync works it out again on its own"),
+                            ("simple", "It catches up on its own")):
+            with self.subTest(mode=mode):
+                text = visible_text(self.get("/luck", mode))
+                self.assertIn(words, text)
+                if mode == "simple":
+                    self.assertEqual([t for t in DEV_TERMS if t in text], [])
+
     def test_without_a_file_it_says_how_to_get_one(self):
         body = self.get("/luck", "simple")
         self.assertIn("shows here once the luck ledger has run", visible_text(body))
