@@ -213,7 +213,7 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
     """scripts.luck_ledger end to end on a fake Sleeper that also serves projections. The
     saved file and the projection cache go to a temporary directory, never data/local."""
 
-    def _run(self, *argv):
+    def _run(self, *argv, owners=None):
         import io
         import json
         import os
@@ -228,6 +228,13 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
                 super().__init__(closed=11, in_progress=12)
                 for lid in (CUR, OLD):
                     self.info[lid]["scoring_settings"] = {"pts": 1.0}
+
+            def rosters(self, lid):
+                out = super().rosters(lid)
+                if lid == OLD and owners:
+                    for r in out:
+                        r["owner_id"] = owners.get(r["roster_id"], r["owner_id"])
+                return out
 
             def __call__(self, url):
                 if "/projections/" in url:
@@ -280,11 +287,33 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
         total = sum(r["accounting"]["parts"]["total"]["wins"] for r in out)
         self.assertAlmostEqual(pooled["wins"], total, places=2)
 
-    def test_another_teams_run_is_not_pooled_across_seasons(self):
-        """--team names a CURRENT team; older seasons fall back to the owner's roster, so a
-        pool would add two different teams' luck."""
+    def test_another_teams_run_follows_that_teams_owner_into_older_seasons(self):
+        """--team names a CURRENT team. Before F96 an older season fell back to the OWNER's
+        roster, so a run for Bravo showed Old Alpha's 2025 -- someone else's history."""
         out, _tmp = self._run("--all", "--team", "Bravo")
+        by = {r["season"]: r for r in out}
+        self.assertEqual(by["2026"]["accounting"]["team"], "Bravo")
+        self.assertEqual(by["2025"]["accounting"]["team"], "Old Bravo")
+
+    def test_another_teams_seasons_pool_like_mine(self):
+        out, _tmp = self._run("--all", "--team", "Bravo")
+        pooled = out[0]["across_seasons"]
+        self.assertEqual(pooled["season_list"], ["2026", "2025"])
+        total = sum(r["accounting"]["parts"]["total"]["wins"] for r in out)
+        self.assertAlmostEqual(pooled["wins"], total, places=2)
+
+    def test_an_owner_absent_from_an_older_league_is_said_not_substituted(self):
+        """Bravo's owner (u2) had no team in 2025: that season is reported as such, never
+        replaced by another roster, and there is nothing to pool."""
+        import io
+        from contextlib import redirect_stderr
+        err = io.StringIO()
+        with redirect_stderr(err):
+            out, _tmp = self._run("--all", "--team", "Bravo", owners={2: "someone-else"})
+        self.assertEqual([r["season"] for r in out], ["2026"])
         self.assertNotIn("across_seasons", out[0])
+        self.assertIn("2025", err.getvalue())
+        self.assertIn("not in this league", err.getvalue())
 
 
 TEAMS_NAMES = ("Alpha", "Bravo", "Charlie", "Delta")
