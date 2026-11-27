@@ -40,7 +40,7 @@ def _default_to_real_names():
     os.environ.setdefault("SHOW_REAL_TEAM_NAMES", "1")
 
 
-def main(argv=None):
+def main(argv=None, after_sync=None):
     _default_to_real_names()
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--full", action="store_true")
@@ -54,6 +54,12 @@ def main(argv=None):
 
     report, md, path, html_path = run_weekly_report(args.team, full=args.full, skip_sync=args.skip_sync,
                                                     sims=args.sims, evaluate=args.evaluate, embed=args.embed, canonical=args.canonical)
+    if not args.skip_sync and report.get("failed_step") != "sync":
+        # The sync wrote data/current (a later step failing does not unwrite it): refresh the
+        # Luck page's saved numbers. Best effort, local only, and never in the digest -- luck
+        # is pulled, not pushed (owner, 2026-09-21; fantasy_sim.luck_refresh).
+        from fantasy_sim.luck_refresh import refresh_after_sync
+        (after_sync or refresh_after_sync)()
     print("\n" + md)
     print(f"\n[{report['status']}] digest -> {path}" + (f"\n[{report['status']}] html   -> {html_path}" if html_path else ""))
     if report["status"] != "OK":
