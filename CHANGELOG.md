@@ -5,6 +5,21 @@ in it, audit counts, hardware/season blockers, backlog, and what the tag does *n
 claim) live on the linked release. MAJOR means the model's predictions changed
 materially (see the release policy in `CLAUDE.md`).
 
+## [v12.2.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v12.2.0) — 2026-11-27 (MINOR)
+
+**The luck ledger separates the roster from the lineup calls.** Beside the luck it now reports what
+each roster's BEST lineup was projected to earn (Sleeper's archived projection, that season's own
+starting slots, the team page's exact solver) and the lineup calls: the wins the lineups actually
+started gave up against it, zero or negative, labelled a decision and never added into the luck.
+2026 weeks 1-11: from −0.27 wins (Quantum Ferrets) to −1.26 (Cosmic Badgers). Registered as
+docs/LUCK_LEDGER.md Addendum 3 before the code, after the owner had seen the Addendum 2 numbers.
+Also: F96 (`--team X --all` showed the owner's older seasons under another team's name; older
+seasons now follow that team's owner), the Luck page refreshes itself after every local sync, the
+public site's deploy retries once before alarming, and the luck ledger's form and job page are
+tidied in both views. F97 recorded OPEN: Sleeper's archive omits five started 2026 player-weeks
+who then scored, and the registered rule counts them 0 -- an owner ruling is needed. The model is
+untouched: goldens 15/15 byte-identical. The suite goes 2522 → 2555.
+
 ## [v12.1.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v12.1.0) — 2026-11-27 (MINOR)
 
 **The luck ledger now answers in wins.** It leads with actual wins against what the lineups each
