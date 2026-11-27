@@ -439,11 +439,6 @@ class FantasySimulationEngine:
         except Exception:
             self.faab_profiles = {t: dict(p) for t, p in MANAGER_PROFILES.items()}
 
-        # ENV_SHARE_IN_PROJECTION (2026-10-12): Sleeper's weekly projection already holds most of the game
-        # environment; strip it out so the one full implied-total ratio the engine applies is the only one.
-        # BEFORE the interval inflation and the blend, which both read these means.
-        self.env_neutralized = self._neutralize_projection_environment()
-
         # B7: widen the predictive intervals BEFORE anything reads them. Measured at
         # sd_z_opt 1.27 against a nominal 1.0 -- see config.INTERVAL_INFLATION for the
         # backtest entry and why this is aleatoric-only. Applied to self.baselines, which
@@ -454,6 +449,15 @@ class FantasySimulationEngine:
         # replacement levels here; B8 (2026-09-23) moved the other two, closing that
         # finding's open half.
         self.calibration_report = self._apply_bayesian_updates()
+
+        # ENV_SHARE_IN_PROJECTION (2026-10-12): Sleeper's weekly projection already holds most of the game
+        # environment; strip it out so the one full implied-total ratio the engine applies is the only one.
+        # F92 (2026-11-27, MAJOR): AFTER the blend, not before it. The blend pulls each mean toward the
+        # player's realised scores, which carry their games' full environment, so neutralising first let
+        # every observed week put ~30% of it back (2026 weeks 6-11: slope -0.50 where -0.71 is intended;
+        # high-total starters lifted ~17% over Sleeper instead of ~7%). Neutralising the blended mean
+        # strips the environment from both halves. Before the builders below, which read these means.
+        self.env_neutralized = self._neutralize_projection_environment()
 
         # B8: built AFTER the blend, so vacated injury volume is apportioned on
         # CORRECTED means. Both builders snapshot p_info['mean'] into a sorted list, so
