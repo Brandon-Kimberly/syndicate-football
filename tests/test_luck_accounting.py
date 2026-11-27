@@ -291,7 +291,7 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
     """scripts.luck_ledger end to end on a fake Sleeper that also serves projections. The
     saved file and the projection cache go to a temporary directory, never data/local."""
 
-    def _run(self, *argv, owners=None):
+    def _run(self, *argv, owners=None, gaps=None, log_rows=None, kickoffs=None):
         import io
         import json
         import os
@@ -320,8 +320,12 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
                 if "/projections/" in url:
                     # Alpha's bench WR p19 projects 50, above its started WR p12 (37): a lineup
                     # call worth 13 points a week. Every other bench player has no projection (0).
-                    return dict({f"p{rid}{i}": {"pts": 36.0 + rid} for rid in TEAMS for i in range(4)},
-                                p19={"pts": 50.0})
+                    out = dict({f"p{rid}{i}": {"pts": 36.0 + rid} for rid in TEAMS for i in range(4)},
+                               p19={"pts": 50.0})
+                    wk = int(url.rstrip("/").rsplit("/", 1)[-1])
+                    for pid in (gaps or {}).get(wk, ()):      # Addendum 4: the archive omits him
+                        out.pop(pid, None)
+                    return out
                 got = super().__call__(url)
                 if "/matchups/" in url:
                     for m in got:
@@ -336,6 +340,13 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
         with open(cache, "w", encoding="utf-8") as fh:
             json.dump({f"p{rid}{i}": {"position": pos, "fantasy_positions": [pos]}
                        for rid in TEAMS for i, pos in ((0, "QB"), (1, "RB"), (2, "WR"), (3, "TE"), (9, "WR"))}, fh)
+        plog = os.path.join(tmp, "projection_log.jsonl")
+        with open(plog, "w", encoding="utf-8") as fh:
+            for row in log_rows or []:
+                fh.write(json.dumps(row) + "\n")
+        sched = os.path.join(tmp, "nfl_schedule.json")
+        with open(sched, "w", encoding="utf-8") as fh:
+            json.dump({"_meta": {"kickoffs": kickoffs or {}}}, fh)
         buf = io.StringIO()
         with mock.patch.object(sl, "_get", fake), \
                 mock.patch.object(sl, "_league_chain", lambda: chain), \
@@ -348,6 +359,8 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
                 mock.patch.object(sl, "_projections", lambda season: None), \
                 mock.patch.object(sl, "LUCK_DIR", tmp), \
                 mock.patch.object(sl, "PLAYERS_CACHE", cache, create=True), \
+                mock.patch.object(sl, "PROJECTION_LOG", plog, create=True), \
+                mock.patch.object(sl, "NFL_SCHEDULE", sched, create=True), \
                 mock.patch("fantasy_sim.storage.BANKED_SCORES_FILE", os.path.join(tmp, "absent.json")), \
                 redirect_stdout(buf):
             sl.main(["--json", *argv])
@@ -371,6 +384,63 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
             self.assertAlmostEqual(saved["teams"][t]["lineup_calls"]["wins"], 0.0, places=6, msg=t)
         self.assertAlmostEqual(by["2025"]["accounting"]["lineup_calls"]["points_per_week"], -13.0, places=6,
                                msg="each season's own slots and roster")
+
+    def _gap_run(self):
+        """Addendum 4. The archive omits, in 2026 (and in the fake's 2025 too):
+          week 4  p21  Bravo's started RB, who scored     -> filled from the pre-kickoff row (40)
+          week 4  p29  Bravo's bench, who scored nothing  -> stays 0 although logged at 60
+          week 5  p31  Charlie's starter, who scored      -> only a row AFTER kickoff: stays 0
+          week 6  p41  Delta's starter, who scored        -> logged at 0: stays 0"""
+        def row(wk, pid, mean, at):
+            return {"season": "2026", "week": wk, "player_id": pid, "sleeper_mean": mean, "synced_at": at}
+        kick = {"4": ["2026-09-25T00:15:00Z", "2026-09-28T17:00:00Z"], "5": ["2026-10-02T00:15:00Z"],
+                "6": ["2026-10-09T00:15:00Z"]}
+        rows = [row(4, "p21", 35.0, "2026-09-23T12:00:00Z"), row(4, "p21", 40.0, "2026-09-24T12:00:00Z"),
+                row(4, "p21", 99.0, "2026-09-26T12:00:00Z"),           # after the first kickoff: not used
+                row(4, "p29", 60.0, "2026-09-24T12:00:00Z"),
+                row(5, "p31", 50.0, "2026-10-03T12:00:00Z"),
+                row(6, "p41", 0.0, "2026-10-08T12:00:00Z")]
+        return self._run("--all", gaps={4: ["p21", "p29"], 5: ["p31"], 6: ["p41"]}, log_rows=rows, kickoffs=kick)
+
+    def test_a_player_the_archive_omits_who_played_is_priced_from_the_log(self):
+        import json
+        import os
+        out, tmp = self._gap_run()
+        with open(os.path.join(tmp, "accounting_2026.json"), encoding="utf-8") as fh:
+            saved = json.load(fh)
+        self.assertEqual(saved["filled_from_log"], 1, "p21 only")
+        # Bravo's starters project 38 each: 152 a week, and 154 in week 4 with p21 at 40 (not 99, not 114)
+        self.assertAlmostEqual(saved["teams"]["Bravo"]["explain"]["projected_per_week"],
+                               round((152.0 * 10 + 154.0) / 11, 2), places=2)
+        for t, base in (("Charlie", 156.0), ("Delta", 160.0)):         # p31 and p41 stay 0
+            self.assertAlmostEqual(saved["teams"][t]["explain"]["projected_per_week"],
+                                   round((base * 10 + base * 3 / 4) / 11, 2), places=2, msg=t)
+        by = {r["season"]: r for r in out}
+        self.assertEqual(by["2026"]["accounting"]["filled_from_log"], 1)
+
+    def test_a_season_without_the_log_is_unchanged(self):
+        import json
+        import os
+        _out, tmp = self._gap_run()
+        with open(os.path.join(tmp, "accounting_2025.json"), encoding="utf-8") as fh:
+            saved = json.load(fh)
+        self.assertEqual(saved["filled_from_log"], 0)
+        self.assertAlmostEqual(saved["teams"]["Old Bravo"]["explain"]["projected_per_week"],
+                               round((152.0 * 13 + 114.0) / 14, 2), places=2)
+
+    def test_the_text_report_says_how_many_were_filled(self):
+        import io
+        from contextlib import redirect_stdout
+        from scripts.luck_ledger import render_accounting, team_view
+        acc = accounting({w: {"A": 100.0 + w, "B": 110.0 - w} for w in range(1, 8)},
+                         {w: {"A": 110.0, "B": 100.0} for w in range(1, 8)},
+                         {w: [("A", "B")] for w in range(1, 8)}, sims=100)
+        acc["filled_from_log"] = 3
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            render_accounting(team_view(acc, "A"), "A")
+        self.assertIn("3 player-weeks", buf.getvalue())
+        self.assertIn("pre-kickoff", buf.getvalue())
 
     def test_the_text_report_names_lineup_calls_as_a_decision(self):
         import io
