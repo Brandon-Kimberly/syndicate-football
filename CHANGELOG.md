@@ -5,6 +5,17 @@ in it, audit counts, hardware/season blockers, backlog, and what the tag does *n
 claim) live on the linked release. MAJOR means the model's predictions changed
 materially (see the release policy in `CLAUDE.md`).
 
+## [v11.1.1](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v11.1.1) — 2026-11-27 (PATCH)
+
+**CI tells the truth again, and a weather timeout can no longer cost a window.** For at least ten
+weeks the `ci` check went green while the suite failed: a Windows step reported only its last
+command, and what it hid was a syntax guard running the WSL launcher on a runner that has no
+Linux (F90). Both are fixed, tests first, and run 46037394306 is the first genuinely green CI
+suite on record. The canonical gate now classifies the weather-lookup warning as benign; left
+unclassified, it cost week 11's Tuesday window (issue #55). Also: ruff, MarkupSafe and
+Playwright bumps. The model is unchanged and the goldens are byte-identical. This tag is the
+week-11 (trade deadline) milestone. The suite goes 2470 → 2475.
+
 ## [v11.1.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v11.1.0) — 2026-10-13 (MINOR)
 
 **The forecast gets a scorecard that writes itself, and the sync stops three quiet hazards.** A
