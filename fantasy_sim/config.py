@@ -402,6 +402,18 @@ TEAM_MAE_HEALTH_THRESHOLD = 18.0
 # confound. B1 RAN on 2026-09-23 and cleared 0.15 unchanged
 # (docs/audit/B1_IDP_EPISTEMIC_RATE.md), so this dependency is DISCHARGED: the variance
 # structure did not move and 1.41 stands on the model it was fitted to.
+#
+# F93 (2026-11-27, MAJOR) -- SCOPED TO WHERE IT WAS MEASURED. Every baseline in that backtest is
+# a POSITIONAL-ONLY prior (Sleeper keeps no historical week-specific projections), and on those
+# 1.41 is right; it stays, byte-for-byte, for the backtest. Live baselines are Sleeper's
+# week-specific projections, and applied to them the factor made every live interval too wide:
+# 88 pre-kickoff canonical team-weeks (2026 weeks 1-11) at rms z 0.77, 80% band 90%, 50% band
+# 65%; 578 healthy starter-weeks at rms z 0.72, 100% inside 2 sd (FORECAST_WATCH's "too wide"
+# bar, met at weeks 5-7). Removing the factor's total-sd scale (1.272, the split above)
+# projects the 88 to rms z 0.98, 82% / 55%. So `_inflate_aleatoric` widens only baselines
+# with a `projection_source` (positional_prior, carried_*, hand_typed) or `auto_imputed`.
+# UNVERIFIED for live weeks 12+: the projection is the arithmetic above, and the live record
+# (scripts.forecast_accuracy) is the check.
 INTERVAL_INFLATION = 1.41
 
 VOLATILITY_CONSTANTS = {'QB': 1.65, 'RB': 1.98, 'WR': 1.8, 'TE': 2.0, 'K': 1.45, 'DL': 2.16, 'LB': 1.67, 'DB': 1.58}

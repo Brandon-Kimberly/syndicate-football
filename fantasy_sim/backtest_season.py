@@ -204,6 +204,9 @@ def build_blank_slate_baselines(live_rosters_payload, byes=None):
                 "mean": mean,
                 "std_aleatoric": round(k_val * math.sqrt(max(0.5, mean)), 2),
                 "std_epistemic": round(err * mean, 2),
+                # F93: not a week-specific projection, so B7's INTERVAL_INFLATION (fitted on
+                # exactly these priors) still applies, and the environment neutralisation skips it.
+                "projection_source": "positional_prior",
                 # From the season's real pairings when supplied (fetch_nfl_pairings ->
                 # derive_bye_weeks), else 0 as in v1.
                 "bye": (byes or {}).get(nfl_team, 0),

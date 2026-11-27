@@ -43,7 +43,7 @@ from unittest.mock import patch
 import numpy as np
 
 from fantasy_sim.config import (
-    NFL_TEAMS, SIM_CONFIG, REGULAR_SEASON_WEEKS, INTERVAL_INFLATION,
+    NFL_TEAMS, SIM_CONFIG, REGULAR_SEASON_WEEKS,
 )
 from fantasy_sim.simulation import FantasySimulationEngine
 from fantasy_sim.storage import (
@@ -63,17 +63,19 @@ CONTROLLED_ENV_MULTIPLIER = 1.0
 def effective_std_a(std_a):
     """The aleatoric sd the SAMPLER sees, which is not the one the fixture file holds.
 
-    B7 (2026-09-23) inflates `std_aleatoric` by INTERVAL_INFLATION at engine init, so every
-    analytic prediction below has to be built from the inflated value or it predicts a
-    distribution the engine no longer draws from. The tolerances are untouched -- what
-    changed is the engine's parameter, not the strictness of the check.
+    B7 (2026-09-23) inflated `std_aleatoric` by INTERVAL_INFLATION at engine init. F93
+    (2026-11-27) scoped that to baselines that are NOT this week's projection, and these
+    fixtures' baselines are (no `projection_source`), so the sampler draws from the raw value
+    again. Kept as a function so the analytic predictions below say which parameter they model;
+    the tolerances are untouched -- what changed is the engine's parameter, not the strictness of
+    the check.
 
     The posterior tests further down deliberately keep the RAW fixture value: the blend runs
     BEFORE the inflation, and that ordering is what makes B7 an interval change rather than
     a mean change. Both facts stay separately observable because the two groups use
     different numbers on purpose.
     """
-    return std_a * INTERVAL_INFLATION
+    return std_a
 
 TEAMS = ["A", "B", "C", "D", "E", "F", "G", "H"]
 SLOT_POSITIONS = ["QB", "K", "DB", "DL", "LB", "RB", "RB", "RB", "WR", "WR", "WR", "TE", "TE"]

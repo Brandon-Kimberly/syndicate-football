@@ -182,7 +182,8 @@ def blend_faab_profiles(priors, observed, prior_weight=FAAB_PROFILE_PRIOR_WEIGHT
 
 
 def _inflate_aleatoric(baselines, factor):
-    """B7. Widen every stored `std_aleatoric` by `factor`, in place.
+    """B7. Widen the stored `std_aleatoric` by `factor`, in place -- for every baseline that is NOT
+    this week's projection (F93; see the loop).
 
     A separate function so it is testable and so `factor=1.0` is a visible no-op -- the
     constant alone must account for the difference between this model and the last one.
@@ -192,7 +193,14 @@ def _inflate_aleatoric(baselines, factor):
     if not factor or factor == 1.0:
         return baselines
     for entry in (baselines or {}).values():
-        if isinstance(entry, dict) and entry.get("std_aleatoric"):
+        # F93 (2026-11-27, MAJOR): only what is NOT this week's projection -- a positional prior,
+        # a carried or hand-typed mean, an auto-imputed zero. The factor was fitted on the 2025
+        # backtest, whose baselines are all positional priors; on Sleeper's week-specific
+        # projections it made every live interval too wide (config.INTERVAL_INFLATION). Same
+        # `projection_source` convention as the environment neutralisation.
+        if not isinstance(entry, dict) or not (entry.get("projection_source") or entry.get("auto_imputed")):
+            continue
+        if entry.get("std_aleatoric"):
             entry["std_aleatoric"] = float(entry["std_aleatoric"]) * float(factor)
     return baselines
 
@@ -441,7 +449,8 @@ class FantasySimulationEngine:
 
         # B7: widen the predictive intervals BEFORE anything reads them. Measured at
         # sd_z_opt 1.27 against a nominal 1.0 -- see config.INTERVAL_INFLATION for the
-        # backtest entry and why this is aleatoric-only. Applied to self.baselines, which
+        # backtest entry and why this is aleatoric-only. F93: only for baselines that are not
+        # this week's projection, the kind the backtest measured. Applied to self.baselines, which
         # every consumer reads, so the tools and the engine cannot disagree about spread.
         _inflate_aleatoric(self.baselines, INTERVAL_INFLATION)
 

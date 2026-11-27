@@ -46,7 +46,8 @@ TEAMS = ['Quantum Ferrets', 'Neon Walruses', 'Rocket Pandas', 'Polar Yetis']
 RAW_ALEATORIC, RAW_EPISTEMIC = 5.0, 3.0
 
 
-def _fs():
+def _fs(source=None):
+    """`source` marks every player as NOT this week's projection (F93: only those are inflated)."""
     base, rosters = {}, {}
     filler = [("QB", 18.0), ("RB", 17.0), ("RB", 15.0), ("WR", 16.0), ("WR", 13.0),
               ("TE", 12.0), ("K", 9.0), ("DL", 9.0), ("LB", 9.0), ("DB", 9.0),
@@ -57,6 +58,8 @@ def _fs():
             n = f"{t[:2]}_{pos}_{i}"
             base[n] = {"mean": mu, "std_aleatoric": RAW_ALEATORIC,
                        "std_epistemic": RAW_EPISTEMIC, "pos": pos, "team": "DET", "bye": 0}
+            if source:
+                base[n]["projection_source"] = source
             entries.append({"name": n, "pos": pos, "team": "DET"})
         rosters[t] = entries
     return {
@@ -77,8 +80,8 @@ def _fs():
     }
 
 
-def _engine():
-    fs = _fs()
+def _engine(source=None):
+    fs = _fs(source)
     pre = logging.getLogger().getEffectiveLevel()
     logging.getLogger().setLevel(logging.ERROR)
     with patch('os.path.exists', side_effect=lambda p: p in fs), \
@@ -124,15 +127,24 @@ class TestTheConstant(unittest.TestCase):
 
 
 class TestItIsAppliedAtInit(unittest.TestCase):
+    """F93 (2026-11-27) scoped the constant to baselines that are NOT this week's projection --
+    where it was fitted (the 2025 backtest's positional priors). These tests therefore mark
+    their players `positional_prior`; the unmarked case is pinned to stay raw below and in
+    tests/test_season_data_fixes."""
+
+    def test_a_this_week_projection_is_left_raw(self):
+        e = _engine()
+        self.assertAlmostEqual(float(e.baselines["Qu_QB_0"]["std_aleatoric"]), RAW_ALEATORIC, places=9)
+
     def test_stored_aleatoric_is_the_inflated_value(self):
         from fantasy_sim.config import INTERVAL_INFLATION
-        e = _engine()
+        e = _engine("positional_prior")
         got = float(e.baselines["Qu_QB_0"]["std_aleatoric"])
         self.assertAlmostEqual(got, RAW_ALEATORIC * INTERVAL_INFLATION, places=9)
 
     def test_every_player_is_inflated_not_just_starters(self):
         from fantasy_sim.config import INTERVAL_INFLATION
-        e = _engine()
+        e = _engine("positional_prior")
         for name, b in e.baselines.items():
             if isinstance(b, dict) and b.get("std_aleatoric"):
                 self.assertAlmostEqual(float(b["std_aleatoric"]),
@@ -142,27 +154,27 @@ class TestItIsAppliedAtInit(unittest.TestCase):
     def test_epistemic_variance_is_left_alone(self):
         """Redrawn weekly vs drawn once per season: not interchangeable, and B7 scopes
         the constant to aleatoric."""
-        e = _engine()
+        e = _engine("positional_prior")
         self.assertAlmostEqual(float(e.baselines["Qu_QB_0"]["std_epistemic"]),
                                RAW_EPISTEMIC, places=9)
 
     def test_it_is_applied_exactly_once(self):
         """Two engines off the same file must agree. Inflating a dict the loader shares
         would compound it on the second construction."""
-        a, b = _engine(), _engine()
+        a, b = _engine("positional_prior"), _engine("positional_prior")
         self.assertAlmostEqual(float(a.baselines["Qu_QB_0"]["std_aleatoric"]),
                                float(b.baselines["Qu_QB_0"]["std_aleatoric"]), places=9)
 
     def test_a_player_without_an_aleatoric_term_does_not_crash(self):
         from fantasy_sim.simulation import _inflate_aleatoric
-        entry = {"mean": 5.0, "pos": "WR"}
+        entry = {"mean": 5.0, "pos": "WR", "projection_source": "positional_prior"}
         _inflate_aleatoric({"x": entry}, 1.27)
         self.assertNotIn("std_aleatoric", entry)
 
     def test_an_inflation_of_one_is_a_no_op(self):
         """So the change is auditable: the constant alone accounts for the difference."""
         from fantasy_sim.simulation import _inflate_aleatoric
-        d = {"x": {"std_aleatoric": 4.0}}
+        d = {"x": {"std_aleatoric": 4.0, "projection_source": "positional_prior"}}
         _inflate_aleatoric(d, 1.0)
         self.assertAlmostEqual(d["x"]["std_aleatoric"], 4.0)
 
