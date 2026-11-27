@@ -227,6 +227,7 @@ Plus two wrong-direction predictions recorded as information (F6's null result; 
 | F22 | IDP epistemic constants (volatility half closed by F28) | derive from F7's projection log after a season |
 | F15 / F26 | draft realized-value row; the ten untested sync handler bodies | season data; fake-HTTP layer respectively |
 | R1 | **machine-level fault under multi-core load — verdict: RMA.** MemTest86 clean, AV excluded, BIOS/microcode updated to 0x133 with Intel Default Settings — Arm D still fails 9/12 and 11/12, so the chip itself is degraded (Vmin Shift class). Load threshold is not safe even at 3 concurrent real engine processes (1/3 silent death, 2026-09-01, no Reliability Monitor trace). Rules: one engine process at a time; a crashed or impossible-error run is void. CI on a cloud Windows runner now provides an independent, fault-free machine certifying every commit. (F90: from at least 2026-09-16 to 2026-11-27 it certified only that the coverage report printed; the suite's exit code was swallowed. Fixed 2026-11-27.) Re-test = Arm D 12/12 after the CPU is replaced. | AUDIT_PLAN.md R1 carries the full probe history |
+| F97 | Sleeper's projection archive omits 5 started 2026 player-weeks who then scored; the luck ledger counts them 0 (Turbo Llamas' lineup calls -0.76 vs -0.31 filled) | owner ruling, then an Addendum 4 registered before the code |
 | F88 | the bid ledger can resolve losses and rival bids from the failed-claims log (B14's "a lost claim never becomes a transaction" was false) | not blocked; tests-first change to `bid_ledger.reconcile` |
 | Phase 8 | engineering / decomposition | only with the golden master — which now exists |
 
@@ -413,6 +414,14 @@ than "fixed": the measurement said the code was right.
   44-49% at 5%; now 2.0-5.3% with a league-pooled weekly spread); a week counted once it
   started (week 12 on Thanksgiving); 2025's head-to-head record was "rewritten" by median wins
   it never had, withholding its schedule luck; `--week` cut finished seasons. Deltas unchanged.
+- **F97** Sleeper's projection archive omits some players who then played — OPEN: five started
+  2026 player-weeks have no archived projection yet scored; Addendum 2/3 count them 0, inflating
+  players-vs-projection luck and lineup calls (Turbo Llamas' calls -0.76, -0.31 with the five
+  filled from the sync's pre-kickoff log). Not adopted: the rule is registered; needs a ruling.
+- **F96** `--team X --all` showed the owner's history under another team's name — RESOLVED:
+  older seasons were identified by MY_TEAM's owner whatever `--team` said; each is now found by
+  the chosen team's owner, an owner absent from a league is reported rather than substituted,
+  and the across-seasons total applies to any team.
 - **F90** CI reported green while the suite failed, for two months — RESOLVED: the `ci` job's
   pwsh step took its result from `coverage report`, the last native command, so every green run
   sampled 2026-09-16 → 11-01 logged `FAILED (failures=1..2)`, including at the v11.0.0 and v11.1.0

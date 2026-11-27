@@ -6910,3 +6910,43 @@ median flag from the results it reads. Every delta is unchanged.
 Cosmic Badgers opponent z −6.14 → −1.45. 2025 schedule luck restored at −1.14 (z −0.63).
 docs/LUCK_LEDGER.md carries the correction beside the registration. Not engine-facing; goldens
 untouched. RESOLVED.
+
+### F96 — `--team X --all` showed the owner's history under another team's name — RESOLVED (2026-11-27)
+
+**Found in review of the v12.1.0 luck ledger.** `scripts.luck_ledger` identified a team in an
+older season by the owner_id of `MY_TEAM`'s current roster, whatever `--team` said. So
+`--team <another current team> --all` printed that team for 2026 and the OWNER's 2024 and 2025
+teams under it -- someone else's history, with the owner's luck. v12.1.0 noticed half of it and
+refused to pool another team's seasons, which hid the symptom and kept the wrong rows.
+
+**Fixed (tests first, `60d0903` red, 3 of 3).** A current team is followed into each older
+league by ITS OWNER (`rosters[].owner_id`, or a co-owner); a name that is not a current team is
+looked up in each season as it stands. When that owner had no team in an older league the season
+says so (`=== 2024: X's owner was not in this league ===`; on stderr under `--json`, so the JSON
+stays parseable) and is skipped -- never substituted. With every season now the same person's,
+the across-seasons total applies to any team. The fake Sleeper gives each old roster the owner
+`u{rid}`; the absent-owner case moves one owner out. Not engine-facing; goldens untouched.
+RESOLVED.
+
+### F97 — Sleeper's projection archive omits some players who then played — OPEN (2026-11-27, owner ruling needed)
+
+**Found implementing Addendum 3** (`docs/LUCK_LEDGER.md`), cross-checking its lineup gaps against
+the team page's "Before the games". In 2026 weeks 1-11, five started player-weeks (two in week 4,
+one in week 6, two in week 9) have NO projection in Sleeper's archive (`/projections/nfl/regular/
+2026/<week>` holds only an ADP stub for them) and yet SCORED that week: they played, so the 0 is a
+gap in the archive, not a late scratch. Addendum 2 and 3 both register "a player with no projection
+counts 0", so since v12.1.0 those points have counted as players-vs-projection luck, and since
+Addendum 3 as lineup calls (a 0-projected starter makes any bench player "better").
+
+**Measured, not adopted** (the rule is registered; changing it after seeing the numbers needs its
+own registration): filling exactly those five from the sync's last pre-kickoff projection log moves
+Turbo Llamas' lineup calls from -0.76 to -0.31 wins and its total luck from +2.16 to +1.64; Rocket
+Pandas' calls -0.38 -> -0.14; Cosmic Badgers' -1.26 -> -1.02; every other team within 0.03 on calls
+and 0.4 on luck (sigma moves). Filling every player the archive omits instead (111 player-weeks) is
+WRONG the other way: most of those were ruled out after Thursday and the archive's 0 is right.
+
+**What would close it:** an owner ruling and an Addendum 4 -- e.g. "a player the archive omits who
+then scored is priced from the sync's last pre-kickoff projection; 2024-25, which have no such log,
+keep 0" -- registered before the code, tests first. Until then the numbers stand as registered and
+the page reads them as such. OPEN.
+

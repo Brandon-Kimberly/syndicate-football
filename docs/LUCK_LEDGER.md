@@ -261,7 +261,9 @@ words: share ≥ 0.25 **ordinary**; 0.10-0.25 **a bit unusual**; 0.025-0.10 **un
   roster and compares it with the sum of one simulated season from each, each season's
   draws shuffled first (seed 20261127) so no two seasons share a random stream. It is only
   computed for the owner's own roster: `--team` names a current team, and the older seasons
-  fall back to the owner's.
+  fall back to the owner's. *(Changed by F96, 2026-11-27: that fallback was a defect -- another
+  team's run showed the owner's history. Each older season now follows the chosen team's OWNER,
+  a season that owner was not in is said and skipped, and the total applies to any team.)*
 - **Median luck is player luck too.** The median game has no schedule, so its part is the
   players-against-projection effect in the median games. The page labels it that way.
 
@@ -277,6 +279,102 @@ Quantum Ferrets and its earlier names; 2026 through week 11:
 
 Together −7.5 wins over three seasons (about 1 in 21 three-season runs).
 
+## Addendum 3: roster versus lineup calls, registered 2026-11-27
+
+**Registered after the owner saw the Addendum 2 numbers**, the same day, and in answer to the
+limit Addendum 2 named itself: "Lineup calls are inside `E`, not in the luck." Committed
+before any code computes it. It adds a DECISION measure beside the luck; it changes no luck
+part, no luck definition and no "how unusual".
+
+### Inputs, per season, per team, per week
+
+- **Roster `R`** = Sleeper's matchup `players` for that team-week: everyone on the roster that
+  week as Sleeper recorded it. That list includes players in IR slots, and Sleeper does not
+  archive who was on IR in a past week, so they stay in (see below).
+- **Slots** = that season's league `roster_positions` with `BN`, `IR` and `TAXI` removed, as
+  Sleeper serves them: 2024 fifteen (two QB, three RB, three WR, two TE, three FLEX, K, DEF),
+  2025 eleven (QB, two RB, two WR, TE, three FLEX, K, DEF), 2026 thirteen (QB, two RB, two WR,
+  TE, three FLEX, K, DL, LB, DB).
+- **Eligibility** = each player's Sleeper `fantasy_positions` from the sync's players cache
+  (`data/current/sleeper_players_cache.json`), read through `config.eligible_slots`; FLEX takes
+  RB, WR and TE (`webui.trade`). A player the cache does not know is eligible for no slot.
+- **Projection** = exactly Addendum 2's: Sleeper's archived weekly projection, scored under the
+  settings in force that week. **A player with no projection counts 0**, started or not.
+
+### The definitions
+
+- **`P_best`** = the highest total projection any legal assignment of `R` to the slots
+  reaches, solved exactly by the web UI's existing solver (`webui.trade.best_lineup`, scipy's
+  `linear_sum_assignment`; the team page's "Before the games" uses the same one), and never
+  below `P`: the lineup actually started was legal in Sleeper, so `P_best = max(solved, P)`.
+  **Ties** cannot matter: only the total is used, never which lineup reached it.
+- **`σ`** = Addendum 2's, unchanged (from the started lineups).
+- **Roster-earned expected wins `E_best`** = `E_h_best + E_m_best`.
+  `E_h_best` = games × the mean over weeks and opponents of Φ((P_best_me − P_opp) / (σ√2)),
+  **the opponents keeping the projections they started**: one team's calls are priced with
+  everyone else's as they were. `E_m_best` (median seasons only) = Σ weeks of P(my
+  `P_best + σε` finishes in the top half against the others' `P + σε`), from the SAME 4,000
+  simulated seasons and the SAME draws: one `ε` per team-week serves both `E_m` and `E_m_best`,
+  so the two differ only by the projections.
+- **Lineup calls, in wins** = `E − E_best`. Zero or negative by construction: Φ increases,
+  `P_best ≥ P`, and with shared draws a higher score never finishes lower. Also reported:
+  **lineup calls in points a week** = the mean over weeks of `P − P_best`.
+- **The identity:** actual wins − `E_best` = lineup calls + total luck. Every luck part is
+  still measured against `E`, the lineups started, exactly as registered in Addendum 2.
+
+**Lineup calls are not luck.** They are never added into the luck total, carry no "1 in N",
+and are labelled as decisions wherever they appear. Unlike the luck parts they do not sum to
+zero across the league (every team's is zero or below) and are not differenced against it:
+the ceiling is the team's own best lineup, so the absolute number is the meaningful one.
+
+### What it cannot do
+
+- **Best by the projection everyone could see**, not by what the manager knew. Benching a
+  player on later news the projection had not caught is charged as a lineup call; so is the
+  reverse luck of a hunch.
+- **IR players are in `R`.** One Sleeper projected above 0 could be "started" by `P_best`
+  although moving him off IR needed a roster move. Sleeper projects most IR players at 0.
+- **Eligibility is today's**, not that week's: a player redesignated mid-season is priced at
+  his current positions; a player missing from the cache is eligible nowhere.
+- **No roster moves**: the best lineup is drawn from that week's roster, never free agents.
+- **Lineups lock per game**, and the projection used is the final pre-game one for the week,
+  so a swap that was no longer possible once a game had started is still offered.
+
+### Noted at implementation (2026-11-27, after the numbers were seen)
+
+- **The archive misses some players who played (F97).** Five started 2026 player-weeks (weeks
+  4, 6, 9) have no archived projection yet scored. The registered rule counts them 0, so each
+  makes a bench player look "better" and charges a lineup call that was not one (Turbo Llamas,
+  week 4: a 21.9-point gap). Filling exactly those five from the sync's own pre-kickoff log would
+  move Turbo Llamas' calls from −0.8 to −0.3, Rocket Pandas' from −0.4 to −0.1 and Cosmic
+  Badgers' from −1.3 to −1.0; the rest within 0.03. Not adopted: changing a registered rule after
+  seeing the numbers needs its own registration and the owner's ruling. The same five feed
+  Addendum 2's players-vs-projection part (up to 0.5 wins of total luck, Turbo Llamas).
+- **Not the team page's "Before the games".** Same solver, different projection: the team page
+  prices on the last projection logged before the week's FIRST kickoff; the archive keeps each
+  player's final pre-game one. A player ruled out on Saturday is priced there and 0 here, so the
+  two gaps differ, in both directions (2026: 1.0 to 5.0 points a week here, 1.5 to 5.9 there).
+- **Checked on the real league:** every 2026 rostered player has eligibility in the cache; the
+  solver never found less than what was started (no eligibility disagreement); in weeks 10-11 no
+  best lineup used a benched player who is on IR now with a projection above 0.
+
+### Readings at implementation (2026-11-27), for the record
+
+2026 through week 11, every team (luck as registered in Addendum 2, unchanged):
+
+| team | wins | projected to earn (started) | roster's best lineups earn | lineup calls, wins | points a week | weeks of 11 a better lineup was there |
+|---|---|---|---|---|---|---|
+| Cosmic Badgers | 10 | 8.4 | 9.7 | −1.26 | −5.0 | 10 |
+| Turbo Llamas | 15 | 12.8 | 13.6 | −0.76 | −2.9 | 9 |
+| Neon Walruses | 16 | 10.9 | 11.6 | −0.63 | −2.4 | 7 |
+| Iron Wombats | 9 | 11.3 | 11.8 | −0.52 | −1.9 | 9 |
+| Rocket Pandas | 17 | 11.5 | 11.9 | −0.38 | −1.4 | 5 |
+| Polar Yetis | 4 | 9.4 | 9.7 | −0.36 | −1.5 | 8 |
+| Crimson Marmots | 7 | 9.8 | 10.1 | −0.32 | −1.1 | 6 |
+| Quantum Ferrets | 10 | 13.8 | 14.1 | −0.27 | −1.0 | 7 |
+
+Quantum Ferrets and its earlier names: lineup calls 2024 −0.31, 2025 −0.19, 2026 −0.27 wins.
+
 ## Usage
 
 ```
@@ -290,3 +388,10 @@ py -3.10 -m scripts.luck_ledger --json
 **Deliberately not wired into `scripts.weekly_report`** (owner's decision, 2026-09-21):
 a luck number in front of you every Sunday is an invitation to read noise as persecution.
 This is a thing you pull when you want it.
+
+**Kept current, still not pushed (2026-11-27).** A successful LOCAL sync -- `scripts.run_sync`
+from the Sync page or a terminal, or `scripts.weekly_report` with its sync -- reruns
+`scripts.luck_ledger --json` afterwards (`fantasy_sim.luck_refresh`), so the web UI's Luck page
+reads this week's numbers. Best effort: a failure is one `[luck]` line in the log and never
+fails the sync or the report; never on a GitHub runner, where `data/local` does not survive.
+Nothing appears in the digest, the report or Home.

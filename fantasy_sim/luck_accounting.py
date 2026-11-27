@@ -17,6 +17,18 @@ cancels (the ledger's one methodological commitment). The five registered measur
 never added in: points against and close games are HOW schedule luck happens, and starters
 who did not play are part of how a team misses its projection.
 
+Addendum 3 (registered 2026-11-27, after the Addendum 2 numbers were seen, before this code):
+given `best` -- each team-week's best-lineup projection from that week's roster -- it also
+reports a DECISION measure beside the luck, never inside it:
+
+    roster-earned E_best  E with my best lineup in place of the one I started, everyone else
+                          as they started; the median half from the same simulated draws
+    lineup calls          E - E_best, in wins (zero or negative), and in points a week
+    identity              actual - E_best = lineup calls + total luck
+
+Solving for the best lineup is the caller's (scripts.luck_ledger uses the web UI's solver);
+this module stays pure.
+
 Pure: stdlib only, no network, no engine. Callers pass plain dicts.
 """
 import math
@@ -129,7 +141,7 @@ def across_seasons(seasons, seed=SEED):
 
 
 def accounting(scores, projected, pairs, results=None, median=False, starters=None,
-               sims=SIMULATIONS, seed=SEED, keep_sims=False):
+               sims=SIMULATIONS, seed=SEED, keep_sims=False, best=None):
     """The registered wins accounting for every team in one season.
 
     scores     {week: {team: points as the league counted them}}
@@ -140,6 +152,10 @@ def accounting(scores, projected, pairs, results=None, median=False, starters=No
     median     whether the season had a median game
     starters   {week: {team: [(projected, scored), ...]}} optional, for the points lost to
                starters who scored 0.00
+    best       {week: {team: the best lineup's projection}} optional (Addendum 3). A value
+               below what was started is raised to it (the lineup started was legal); a
+               team-week it does not cover counts as started. Without it, `roster_expected`
+               and `lineup_calls` are None. It changes no luck part.
 
     Returns {"weeks", "left_out", "median", "sigma", "simulations", "seed", "early",
              "teams": {team: {...}}, "standings": [...]} or None without enough data.
@@ -192,18 +208,44 @@ def accounting(scores, projected, pairs, results=None, median=False, starters=No
                 n += 1
         q[t] = tot / n if n else 0.0
 
+    # --- Addendum 3: what each roster's best lineups earned, the others as started ------
+    def top(w, t):
+        """P_best: never below what was started; a team-week `best` does not cover = started."""
+        p = projected[w][t]
+        b = ((best or {}).get(w) or {}).get(t)
+        return max(float(b), p) if b is not None else p
+
+    q_best = {}
+    if best:
+        for t in teams:
+            tot, n = 0.0, 0
+            for w in weeks:
+                if t not in projected[w]:
+                    continue
+                for o, po in projected[w].items():
+                    if o == t:
+                        continue
+                    tot += _phi((top(w, t) - po) / scale)
+                    n += 1
+            q_best[t] = tot / n if n else 0.0
+
     # --- the null: S = P + sigma * e, on the real schedule ----------------------------
+    # One e per team-week, drawn in the same order as before Addendum 3, so the registered
+    # numbers do not move; the best lineups reuse the same e (Addendum 3: shared draws).
     rng = random.Random(seed)
     sim_ap = {t: [] for t in teams}
     sim_h = {t: [] for t in teams}
     sim_m = {t: [] for t in teams}
+    sim_mb = {t: [] for t in teams}
     for _ in range(sims):
         apw = dict.fromkeys(teams, 0.0)
         apn = dict.fromkeys(teams, 0)
         hw = dict.fromkeys(teams, 0.0)
         mw = dict.fromkeys(teams, 0.0)
+        mwb = dict.fromkeys(teams, 0.0)
         for w in weeks:
-            draw = {t: projected[w][t] + sigma * rng.gauss(0.0, 1.0) for t in sub[w]}
+            eps = {t: rng.gauss(0.0, 1.0) for t in sub[w]}
+            draw = {t: projected[w][t] + sigma * eps[t] for t in sub[w]}
             order = sorted(draw, key=draw.get)
             n = len(order)
             for i, t in enumerate(order):
@@ -211,6 +253,12 @@ def accounting(scores, projected, pairs, results=None, median=False, starters=No
                 apn[t] += n - 1
                 if median and i >= n - n // 2:   # top half
                     mw[t] += 1.0
+            if best and median:
+                for t in sub[w]:
+                    mine = top(w, t) + sigma * eps[t]
+                    below = sum(1 for o in sub[w] if o != t and draw[o] < mine)
+                    if below >= n - n // 2:
+                        mwb[t] += 1.0
             for t, o in (opp.get(w) or {}).items():
                 if draw[t] > draw[o]:
                     hw[t] += 1.0
@@ -219,8 +267,10 @@ def accounting(scores, projected, pairs, results=None, median=False, starters=No
             sim_ap[t].append((apw[t] / apn[t]) * g if apn[t] else 0.0)
             sim_h[t].append(hw[t])
             sim_m[t].append(mw[t])
+            sim_mb[t].append(mwb[t])
 
     e_m = {t: (sum(sim_m[t]) / sims if median else 0.0) for t in teams}
+    e_mb = {t: (sum(sim_mb[t]) / sims if median else 0.0) for t in teams}
 
     # --- where it came from (never added) ---------------------------------------------
     resid = {}
@@ -276,6 +326,19 @@ def accounting(scores, projected, pairs, results=None, median=False, starters=No
                 "dnp_points_relative": round(sum(d for _, d in ds) / len(ds), 2) if ds else None,
             },
         }
+        if best:                                        # Addendum 3: a decision, not a luck part
+            e_hb = q_best[t] * g
+            calls = (e_h + e_m[t]) - (e_hb + e_mb[t])
+            gaps = [projected[w][t] - top(w, t) for w in weeks if t in projected[w]]
+            out[t]["roster_expected"] = {"h2h": round(e_hb, 3), "median": round(e_mb[t], 3) if median else None,
+                                         "total": round(e_hb + e_mb[t], 3)}
+            # zero or negative by construction (Addendum 3); + 0.0 turns a -0.0 into 0.0
+            out[t]["lineup_calls"] = {"wins": round(calls, 3) + 0.0,
+                                      "points_per_week": (round(sum(gaps) / len(gaps), 2) + 0.0) if gaps else 0.0,
+                                      "weeks_short": sum(1 for x in gaps if x < -0.005)}
+        else:
+            out[t]["roster_expected"] = None
+            out[t]["lineup_calls"] = None
         if keep_sims:                                   # for across_seasons; never saved
             out[t]["_sims_total"] = s_tot
 
@@ -290,6 +353,10 @@ def accounting(scores, projected, pairs, results=None, median=False, starters=No
                   "actual_rank": by_actual.index(t) + 1, "neutral_rank": by_neutral.index(t) + 1,
                   "points_for": round(pf[t], 2)}
                  for t in by_actual]
+    if best:
+        for r in standings:
+            r["roster_wins"] = out[r["team"]]["roster_expected"]["total"]
+            r["lineup_calls"] = out[r["team"]]["lineup_calls"]["wins"]
     for t in teams:
         out[t]["actual_rank"] = by_actual.index(t) + 1
         out[t]["neutral_rank"] = by_neutral.index(t) + 1

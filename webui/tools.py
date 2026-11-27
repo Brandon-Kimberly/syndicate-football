@@ -281,9 +281,12 @@ TOOLS = {t.name: t for t in (
     Tool("odds_history", "How have my title odds moved this season?",
          [team()], forced=("--json",), detail="Canonical runs only."),
     Tool("luck_ledger", "Am I actually unlucky?",
-         [Field("season", "text"), Field("all", "flag", label="every season"),
-          team(default_mine=False, label="team (blank for mine)"), WEEK], forced=("--json",),
-         detail="Five pre-registered measures, each against the league average."),
+         # every season by default, and no week: the ledger counts the weeks the league has
+         # closed (F95) and --week only trimmed the current season -- the CLI keeps it (2026-11-27)
+         [Field("season", "text"), Field("all", "flag", label="every season", default="1"),
+          team(default_mine=False, label="team (blank for mine)")], forced=("--json",),
+         detail="Wins against what the lineups started were projected to earn, in parts that add up; "
+                "then the five pre-registered measures, each against the league average."),
     Tool("decision_scorecard", "How good were a week's start/sit calls?",
          [team(), Field("week", "int", required=True, help="a completed week")], forced=("--json",)),
     Tool("data_health", "Is every data source the model uses in good shape?",

@@ -18,7 +18,7 @@
 <div class="head">
   <p class="eyebrow">{% if dev %}{{ 'engine run' if job.tool in ('run_simulation', 'weekly_report') else 'tool' }}{% else %}your question{% endif %} · started {{ job.started_at|when }}{% if job.finished_at %} · took <span class="elapsed">{{ elapsed|dur }}</span>{% endif %}</p>
   <h1><span class="pill {{ job.state }}" id="pill">{{ job.state|state_label }}</span> {{ job.tool|tool_title }}</h1>
-  {% if job.label and job.label != job.tool %}<p class="lede">{{ (job.label|replace(job.tool, job.tool|tool_title))|real }}</p>{% endif %}
+  {% set sub = job|job_subtitle %}{% if sub %}<p class="lede">{{ sub|real }}</p>{% endif %}
   {% if job.resolved %}<p class="small muted">Players matched: {{ job.resolved|join(" · ")|real }}</p>{% endif %}
 </div>
 

@@ -26,6 +26,7 @@ import argparse
 import sys
 
 from fantasy_sim.config import ODDS_API_KEY
+from fantasy_sim.luck_refresh import refresh_after_sync
 from fantasy_sim.sync import should_stop_for_odds_key, sync_all, verify_odds_key
 
 
@@ -54,5 +55,15 @@ def main(argv=None):
     return 0
 
 
+def cli(argv=None, after_sync=None):
+    """The command line: main(), then -- only after a sync that succeeded -- refresh the Luck
+    page's saved accounting (fantasy_sim.luck_refresh: best effort, never on a runner, never
+    changes the exit code). Tests call main() directly and so never reach the refresh."""
+    code = main(argv)
+    if code == 0:
+        (after_sync or refresh_after_sync)()
+    return code
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(cli())

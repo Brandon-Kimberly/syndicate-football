@@ -94,6 +94,84 @@ class TestIdentityAndConservation(unittest.TestCase):
         self.assertEqual(min(e, key=e.get), "T1")
 
 
+class TestLineupCalls(unittest.TestCase):
+    """Addendum 3 (docs/LUCK_LEDGER.md, registered before this code): roster-earned expected
+    wins from each team's BEST lineup projection, and lineup calls = E - E_best. A decision
+    measure: never a luck part, never added to the luck total."""
+
+    def test_two_teams_one_week_by_hand(self):
+        """A started 110 but its roster's best lineup projected 120; B started its best (100).
+        sigma is Addendum 2's, from the started lineups: 14.142. Opponents keep what they started:
+        E_h_best(A) = Phi((120 - 100) / 20) = Phi(1) = 0.8413, so A's calls cost
+        0.6915 - 0.8413 = -0.1498 wins and 10 points; B's cost nothing."""
+        out = accounting({1: {"A": 100.0, "B": 110.0}}, {1: {"A": 110.0, "B": 100.0}}, {1: [("A", "B")]},
+                         sims=200, best={1: {"A": 120.0, "B": 100.0}})
+        a, b = out["teams"]["A"], out["teams"]["B"]
+        self.assertAlmostEqual(out["sigma"], 14.14, places=2)
+        self.assertAlmostEqual(a["roster_expected"]["h2h"], 0.8413, delta=0.001)
+        self.assertAlmostEqual(a["lineup_calls"]["wins"], -0.1498, delta=0.001)
+        self.assertAlmostEqual(a["lineup_calls"]["points_per_week"], -10.0, places=6)
+        self.assertAlmostEqual(b["lineup_calls"]["wins"], 0.0, places=6)
+        self.assertAlmostEqual(b["roster_expected"]["h2h"], 0.3085, delta=0.001)
+
+    @classmethod
+    def setUpClass(cls):
+        rng = random.Random(5)
+        cls.scores, cls.proj, cls.pairs = _league(rng)
+        cls.best = {w: {t: p + (rng.choice((0.0, 0.0, rng.uniform(0, 14)))) for t, p in row.items()}
+                    for w, row in cls.proj.items()}
+        cls.plain = accounting(cls.scores, cls.proj, cls.pairs, median=True, sims=300)
+        cls.out = accounting(cls.scores, cls.proj, cls.pairs, median=True, sims=300, best=cls.best)
+
+    def test_the_luck_is_untouched(self):
+        """Every luck part, expected win and standing is what Addendum 2 gives without it."""
+        for t in self.plain["teams"]:
+            a, b = self.plain["teams"][t], self.out["teams"][t]
+            for key in ("actual", "expected", "parts", "all_play_wins", "explain", "actual_rank", "neutral_rank"):
+                self.assertEqual(a[key], b[key], (t, key))
+        self.assertEqual([dict((k, r[k]) for k in self.plain["standings"][0]) for r in self.out["standings"]],
+                         self.plain["standings"])
+
+    def test_calls_are_never_positive_and_zero_for_a_perfect_manager(self):
+        for t, r in self.out["teams"].items():
+            self.assertLessEqual(r["lineup_calls"]["wins"], 1e-9, t)
+            self.assertLessEqual(r["lineup_calls"]["points_per_week"], 1e-9, t)
+        same = accounting(self.scores, self.proj, self.pairs, median=True, sims=100, best=self.proj)
+        for t, r in same["teams"].items():
+            self.assertAlmostEqual(r["lineup_calls"]["wins"], 0.0, places=9, msg=t)
+
+    def test_the_identity(self):
+        """actual - E_best = lineup calls + total luck."""
+        for t, r in self.out["teams"].items():
+            self.assertAlmostEqual(r["actual"]["total"] - r["roster_expected"]["total"],
+                                   r["lineup_calls"]["wins"] + r["parts"]["total"]["wins"], places=2, msg=t)
+
+    def test_calls_are_never_a_luck_part(self):
+        for t, r in self.out["teams"].items():
+            self.assertNotIn("lineup_calls", r["parts"], t)
+            self.assertNotIn("share", r["lineup_calls"], "no 1 in N for a decision")
+
+    def test_one_teams_calls_are_priced_against_the_others_as_started(self):
+        """Raising another team's best lineup changes nothing of mine."""
+        bumped = {w: dict(row, T1=row["T1"] + 30.0) for w, row in self.best.items()}
+        other = accounting(self.scores, self.proj, self.pairs, median=True, sims=300, best=bumped)
+        self.assertEqual(other["teams"]["T0"]["lineup_calls"], self.out["teams"]["T0"]["lineup_calls"])
+        self.assertLess(other["teams"]["T1"]["lineup_calls"]["wins"], self.out["teams"]["T1"]["lineup_calls"]["wins"])
+
+    def test_a_best_below_what_was_started_is_raised_to_it(self):
+        """The lineup started was legal, so P_best is never below P (e.g. eligibility data that
+        disagrees with Sleeper)."""
+        low = {w: {t: p - 5.0 for t, p in row.items()} for w, row in self.proj.items()}
+        out = accounting(self.scores, self.proj, self.pairs, median=True, sims=100, best=low)
+        for t, r in out["teams"].items():
+            self.assertAlmostEqual(r["lineup_calls"]["wins"], 0.0, places=9, msg=t)
+
+    def test_without_best_lineups_there_is_nothing_to_say(self):
+        for r in self.plain["teams"].values():
+            self.assertIsNone(r["lineup_calls"])
+            self.assertIsNone(r["roster_expected"])
+
+
 class TestUnderTheNullTheSharesAreHonest(unittest.TestCase):
     """When scores really are projection + normal noise, a season 'rarer than 1 in 20' must
     turn up about one time in twenty, in each direction."""
@@ -213,7 +291,7 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
     """scripts.luck_ledger end to end on a fake Sleeper that also serves projections. The
     saved file and the projection cache go to a temporary directory, never data/local."""
 
-    def _run(self, *argv):
+    def _run(self, *argv, owners=None):
         import io
         import json
         import os
@@ -228,15 +306,36 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
                 super().__init__(closed=11, in_progress=12)
                 for lid in (CUR, OLD):
                     self.info[lid]["scoring_settings"] = {"pts": 1.0}
+                    # Addendum 3: four starting slots, the rest bench
+                    self.info[lid]["roster_positions"] = ["QB", "RB", "WR", "TE", "BN", "BN"]
+
+            def rosters(self, lid):
+                out = super().rosters(lid)
+                if lid == OLD and owners:
+                    for r in out:
+                        r["owner_id"] = owners.get(r["roster_id"], r["owner_id"])
+                return out
 
             def __call__(self, url):
                 if "/projections/" in url:
-                    return {f"p{rid}{i}": {"pts": 36.0 + rid} for rid in TEAMS for i in range(4)}
-                return super().__call__(url)
+                    # Alpha's bench WR p19 projects 50, above its started WR p12 (37): a lineup
+                    # call worth 13 points a week. Every other bench player has no projection (0).
+                    return dict({f"p{rid}{i}": {"pts": 36.0 + rid} for rid in TEAMS for i in range(4)},
+                                p19={"pts": 50.0})
+                got = super().__call__(url)
+                if "/matchups/" in url:
+                    for m in got:
+                        if m.get("starters"):
+                            m["players"] = list(m["starters"]) + [f"p{m['roster_id']}9"]
+                return got
 
         fake = WithProjections()
         chain = [("2026", CUR, fake.info[CUR]), ("2025", OLD, fake.info[OLD])]
         tmp = tempfile.mkdtemp()
+        cache = os.path.join(tmp, "players_cache.json")
+        with open(cache, "w", encoding="utf-8") as fh:
+            json.dump({f"p{rid}{i}": {"position": pos, "fantasy_positions": [pos]}
+                       for rid in TEAMS for i, pos in ((0, "QB"), (1, "RB"), (2, "WR"), (3, "TE"), (9, "WR"))}, fh)
         buf = io.StringIO()
         with mock.patch.object(sl, "_get", fake), \
                 mock.patch.object(sl, "_league_chain", lambda: chain), \
@@ -248,10 +347,48 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
                 mock.patch.object(sl, "_banked", lambda season: {}), \
                 mock.patch.object(sl, "_projections", lambda season: None), \
                 mock.patch.object(sl, "LUCK_DIR", tmp), \
+                mock.patch.object(sl, "PLAYERS_CACHE", cache, create=True), \
                 mock.patch("fantasy_sim.storage.BANKED_SCORES_FILE", os.path.join(tmp, "absent.json")), \
                 redirect_stdout(buf):
             sl.main(["--json", *argv])
         return json.loads(buf.getvalue()), tmp
+
+    def test_lineup_calls_from_the_rosters_best_lineup(self):
+        """Addendum 3 end to end: Alpha left a 50-point WR on the bench for a 37-point one every
+        week; nobody else had a better bench option."""
+        import json
+        import os
+        out, tmp = self._run("--all")
+        by = {r["season"]: r for r in out}
+        mine = by["2026"]["accounting"]
+        self.assertAlmostEqual(mine["lineup_calls"]["points_per_week"], -13.0, places=6)
+        self.assertLess(mine["lineup_calls"]["wins"], 0.0)
+        self.assertGreater(mine["roster_expected"]["total"], mine["expected"]["total"])
+        with open(os.path.join(tmp, "accounting_2026.json"), encoding="utf-8") as fh:
+            saved = json.load(fh)
+        for t in ("Bravo", "Charlie", "Delta"):
+            self.assertAlmostEqual(saved["teams"][t]["lineup_calls"]["points_per_week"], 0.0, places=6, msg=t)
+            self.assertAlmostEqual(saved["teams"][t]["lineup_calls"]["wins"], 0.0, places=6, msg=t)
+        self.assertAlmostEqual(by["2025"]["accounting"]["lineup_calls"]["points_per_week"], -13.0, places=6,
+                               msg="each season's own slots and roster")
+
+    def test_the_text_report_names_lineup_calls_as_a_decision(self):
+        import io
+        from contextlib import redirect_stdout
+        from scripts.luck_ledger import render_accounting, team_view
+        acc = accounting({w: {"A": 100.0 + w, "B": 110.0 - w} for w in range(1, 8)},
+                         {w: {"A": 110.0, "B": 100.0} for w in range(1, 8)},
+                         {w: [("A", "B")] for w in range(1, 8)}, sims=100,
+                         best={w: {"A": 118.0, "B": 100.0} for w in range(1, 8)})
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            render_accounting(team_view(acc, "A"), "A")
+        text = buf.getvalue()
+        self.assertIn("LINEUP CALLS", text)
+        self.assertIn("a decision, not luck", text)
+        self.assertIn("-8.0 points a week", text)
+        total_line = next(ln for ln in text.splitlines() if ln.strip().startswith("total"))
+        self.assertNotIn("lineup", total_line.lower(), "never added into the luck total")
 
     def test_each_season_carries_my_accounting_and_the_league_is_saved(self):
         import json
@@ -280,11 +417,33 @@ class TestTheScriptReportsAndSavesIt(unittest.TestCase):
         total = sum(r["accounting"]["parts"]["total"]["wins"] for r in out)
         self.assertAlmostEqual(pooled["wins"], total, places=2)
 
-    def test_another_teams_run_is_not_pooled_across_seasons(self):
-        """--team names a CURRENT team; older seasons fall back to the owner's roster, so a
-        pool would add two different teams' luck."""
+    def test_another_teams_run_follows_that_teams_owner_into_older_seasons(self):
+        """--team names a CURRENT team. Before F96 an older season fell back to the OWNER's
+        roster, so a run for Bravo showed Old Alpha's 2025 -- someone else's history."""
         out, _tmp = self._run("--all", "--team", "Bravo")
+        by = {r["season"]: r for r in out}
+        self.assertEqual(by["2026"]["accounting"]["team"], "Bravo")
+        self.assertEqual(by["2025"]["accounting"]["team"], "Old Bravo")
+
+    def test_another_teams_seasons_pool_like_mine(self):
+        out, _tmp = self._run("--all", "--team", "Bravo")
+        pooled = out[0]["across_seasons"]
+        self.assertEqual(pooled["season_list"], ["2026", "2025"])
+        total = sum(r["accounting"]["parts"]["total"]["wins"] for r in out)
+        self.assertAlmostEqual(pooled["wins"], total, places=2)
+
+    def test_an_owner_absent_from_an_older_league_is_said_not_substituted(self):
+        """Bravo's owner (u2) had no team in 2025: that season is reported as such, never
+        replaced by another roster, and there is nothing to pool."""
+        import io
+        from contextlib import redirect_stderr
+        err = io.StringIO()
+        with redirect_stderr(err):
+            out, _tmp = self._run("--all", "--team", "Bravo", owners={2: "someone-else"})
+        self.assertEqual([r["season"] for r in out], ["2026"])
         self.assertNotIn("across_seasons", out[0])
+        self.assertIn("2025", err.getvalue())
+        self.assertIn("not in this league", err.getvalue())
 
 
 TEAMS_NAMES = ("Alpha", "Bravo", "Charlie", "Delta")

@@ -28,7 +28,11 @@ actually started earned, split into players-vs-projection, schedule and median p
 up exactly, with "about 1 in N" from a simulated null and luck-neutral standings. It fetches
 Sleeper's archived weekly projections (cached under data/local/luck/projections) and saves the
 league-wide result to data/local/luck/accounting_<season>.json for the web UI's luck page.
-With --all and no other --team, it also totals the owner's luck across the seasons.
+Since Addendum 3 (registered 2026-11-27) it also reports LINEUP CALLS beside the luck, never in
+it: what each roster's best lineup (the web UI's solver, each season's own starting slots,
+eligibility from the sync's players cache) was projected to earn, against the lineups started.
+With --all it also totals the team's luck across the seasons; an older season follows the
+chosen team's OWNER (F96), and says so when that owner was not in the league.
 """
 import argparse
 import json
@@ -97,11 +101,13 @@ def closed_weeks(counted, per_week):
     return min(games) // per_week
 
 
-def _season_data(lid, info, names, through_week=None, ids=None):
+def _season_data(lid, info, names, through_week=None, ids=None, rosters=None):
     """weekly_scores, pairs, starter_points for a season -- completed weeks only. The caller
     passes `through_week` = the last CLOSED week (closed_weeks), never just a week that has
     started (F95). `ids`, when given, is filled with {week: {team: [starter player id, ...]}}
-    in the same order as starter_points (the wins accounting prices those players)."""
+    in the same order as starter_points (the wins accounting prices those players), and
+    `rosters` with {week: {team: [every player id on the roster that week]}} (Sleeper's matchup
+    `players`, IR slots included: Addendum 3's roster)."""
     last = int(info.get("settings", {}).get("playoff_week_start") or 15) - 1
     if through_week is not None:
         last = min(last, int(through_week))
@@ -125,11 +131,15 @@ def _season_data(lid, info, names, through_week=None, ids=None):
             srow[t] = [float(pp.get(s) or 0.0) for s in sids]
             if ids is not None:
                 ids.setdefault(wk, {})[t] = sids
+            if rosters is not None:
+                rosters.setdefault(wk, {})[t] = [str(p) for p in (m.get("players") or []) if p and str(p) != "0"]
             if m.get("matchup_id") is not None:
                 by_mid[m["matchup_id"]].append(t)
         if not live:
             if ids is not None:
                 ids.pop(wk, None)
+            if rosters is not None:
+                rosters.pop(wk, None)
             continue                     # week hasn't been played
         scores[wk] = row
         starters[wk] = srow
@@ -322,12 +332,49 @@ def _week_projection(season, week, settings):
     return out
 
 
-def _projected_lineups(season, lid, info, ids, starters):
-    """(projected {week: {team: total}}, detail {week: {team: [(projected, scored), ...]}})
-    for every started player. A week Sleeper serves no projections for is left out."""
+PLAYERS_CACHE = os.path.join("data", "current", "sleeper_players_cache.json")
+NOT_STARTING = ("BN", "IR", "TAXI")
+
+
+def starting_slots(info):
+    """That season's own starting slots (Addendum 3): the league's roster_positions less the
+    bench, IR and taxi spots. 2024 had fifteen, 2025 eleven, 2026 thirteen."""
+    return [p for p in ((info or {}).get("roster_positions") or []) if p not in NOT_STARTING]
+
+
+def _eligibility(path=None):
+    """{player_id: {"pos", "slots"}} from the sync's players cache (Sleeper's fantasy_positions,
+    as of the last sync). {} when there is no cache: then no best lineup is computed."""
+    try:
+        with open(path or PLAYERS_CACHE, encoding="utf-8") as fh:
+            cache = json.load(fh) or {}
+    except (OSError, ValueError):
+        return {}
+    return {str(pid): {"pos": c.get("position"), "slots": list(c.get("fantasy_positions") or [])}
+            for pid, c in cache.items() if isinstance(c, dict)}
+
+
+def _best_projection(roster, proj, slots, elig):
+    """Addendum 3's P_best before the floor at what was started: the most a legal lineup from
+    `roster` projects, solved by the web UI's own exact solver (webui.trade.best_lineup, the
+    one behind the team page's "Before the games"). A player the cache does not know is
+    eligible for no slot; a player with no projection counts 0."""
+    from webui.trade import best_lineup
+    pool = {pid: dict(elig[pid], mean=float(proj.get(pid, 0.0))) for pid in roster if pid in elig}
+    total, _used, _empty = best_lineup(pool, None, slots)
+    return total
+
+
+def _projected_lineups(season, lid, info, ids, starters, rosters=None, elig=None):
+    """(projected {week: {team: total}}, detail {week: {team: [(projected, scored), ...]}},
+    best {week: {team: best lineup's projection}} or None) for every started player. A week
+    Sleeper serves no projections for is left out. `best` needs the rosters, the eligibility
+    and the season's starting slots (Addendum 3); without any of them it is None."""
     weeks = sorted(ids)
     settings = _settings_by_week(season, lid, info, weeks)
-    projected, detail = {}, {}
+    slots = starting_slots(info)
+    can_solve = bool(rosters and elig and slots)
+    projected, detail, best = {}, {}, {}
     for w in weeks:
         proj = _week_projection(season, w, settings[w])
         if not proj:
@@ -338,7 +385,10 @@ def _projected_lineups(season, lid, info, ids, starters):
                      for i, p in enumerate(pids)]
             projected.setdefault(w, {})[t] = round(sum(p for p, _s in pairs), 2)
             detail.setdefault(w, {})[t] = pairs
-    return projected, detail
+            roster = ((rosters or {}).get(w) or {}).get(t)
+            if can_solve and roster:
+                best.setdefault(w, {})[t] = _best_projection(roster, proj, slots, elig)
+    return projected, detail, (best if can_solve and best else None)
 
 
 def _save_accounting(season, acc):
@@ -406,8 +456,22 @@ def render_accounting(view, team_label, ov=None):
                     f"{'more' if x['dnp_points_relative'] >= 0 else 'less'} than the league lost to starters who scored nothing")
     if bits:
         print("    Where it came from (not added in): " + "; ".join(bits) + ".")
+    render_lineup_calls(view)
     if view.get("left_out"):
         print(f"    Weeks with no projections, left out: {', '.join(str(w) for w in view['left_out'])}.")
+
+
+def render_lineup_calls(view):
+    """Addendum 3: the roster's best lineups against the ones started. A decision, never luck."""
+    calls, roster = view.get("lineup_calls"), view.get("roster_expected")
+    if not calls or not roster:
+        return
+    n = len(view.get("weeks") or [])
+    print("\n    LINEUP CALLS (a decision, not luck; never added to the luck above)")
+    print(f"    Your roster's best lineups were projected to earn {roster['total']:.1f} wins; "
+          f"the lineups you started, {view['expected']['total']:.1f}.")
+    print(f"    Lineup calls: {_wins(calls['wins'])} ({calls['points_per_week']:+.1f} points a week; "
+          f"a better lineup was on the roster in {calls['weeks_short']} of {n} weeks).")
 
 
 def _ordinal(n):
@@ -470,6 +534,38 @@ def render(res, season, team_label, n_weeks):
               f"errors are the point.")
 
 
+def _say(to_stderr, text):
+    """A note between seasons: stdout for the text report, stderr under --json so the JSON on
+    stdout stays parseable."""
+    import sys
+    print(text, file=sys.stderr if to_stderr else sys.stdout)
+
+
+def _owner_of(team):
+    """The owner_id of the CURRENT league's roster called `team` (the pseudonym map), or None."""
+    try:
+        rosters = _get(f"{BASE_URL}/league/{LEAGUE_ID}/rosters") or []
+    except Exception:
+        return None
+    return next((r.get("owner_id") for r in rosters
+                 if TEAM_NAME_MAP.get(str(r.get("roster_id"))) == team and r.get("owner_id")), None)
+
+
+def _roster_of(lid, owner):
+    """roster_id of `owner` in league `lid` -- as owner or co-owner -- or None when that owner
+    had no team there. Never another roster in its place (F96)."""
+    if not owner:
+        return None
+    try:
+        rosters = _get(f"{BASE_URL}/league/{lid}/rosters") or []
+    except Exception:
+        return None
+    for r in rosters:
+        if r.get("owner_id") == owner or owner in (r.get("co_owners") or []):
+            return r.get("roster_id")
+    return None
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -499,8 +595,16 @@ def main(argv=None):
 
     ov = real_name_overlay()
     payload = []
-    pool = []                                   # (season, total luck, simulated totals): mine only
-    mine_everywhere = a.team in (None, "", MY_TEAM)
+    pool = []                                   # (season, total luck, simulated totals)
+    want = a.team or MY_TEAM
+    # F96: a CURRENT team is followed into older seasons by its OWNER (rosters' owner_id);
+    # before, every older season fell back to the owner of MY_TEAM, so `--team X --all`
+    # printed the owner's 2024/2025 under X's name. A name that is not a current team is
+    # looked up in each season as it stands.
+    current_team = want in set(TEAM_NAME_MAP.values())
+    owner = _owner_of(want) if current_team else None
+    # Addendum 3: today's fantasy_positions, read only when some season has slots to solve
+    elig = _eligibility() if any(starting_slots(i) for _s, _l, i in chain) else {}
     for season, lid, info in chain:
         names = _team_names(lid, info)
         per_week = 2 if (info.get("settings") or {}).get("league_average_match") else 1
@@ -510,22 +614,21 @@ def main(argv=None):
         through = closed_weeks(counted, per_week)
         if a.week and (str(lid) == str(LEAGUE_ID) or a.league_id):
             through = a.week if through is None else min(through, a.week)
-        ids = {}
-        scores, pairs, starters = _season_data(lid, info, names, through, ids=ids)
+        ids, rosters = {}, {}
+        scores, pairs, starters = _season_data(lid, info, names, through, ids=ids, rosters=rosters)
         if not scores:
-            print(f"\n=== {season}: no completed weeks ===")
+            _say(a.json, f"\n=== {season}: no completed weeks ===")
             continue
-        team = a.team or (MY_TEAM if str(lid) == str(LEAGUE_ID) else None)
-        if team is None or team not in next(iter(scores.values())):
-            # older seasons: find my roster by owner id via the current league
-            cur_rosters = _get(f"{BASE_URL}/league/{LEAGUE_ID}/rosters")
-            uid = next((r.get("owner_id") for r in cur_rosters
-                        if TEAM_NAME_MAP.get(str(r["roster_id"])) == MY_TEAM), None)
-            old = _get(f"{BASE_URL}/league/{lid}/rosters")
-            rid = next((r["roster_id"] for r in old if r.get("owner_id") == uid), None)
-            team = names.get(rid)
+        if str(lid) == str(LEAGUE_ID) or not current_team:
+            team = want if want in next(iter(scores.values())) else None
+            why = f"no team called {ov.get(want, want)} in this league"
+        else:
+            rid = _roster_of(lid, owner)
+            team = names.get(rid) if rid is not None else None
+            why = (f"{ov.get(want, want)}'s owner was not in this league" if owner
+                   else f"could not find {ov.get(want, want)}'s owner")
         if team is None:
-            print(f"\n=== {season}: could not identify your roster ===")
+            _say(a.json, f"\n=== {season}: {why} ===")
             continue
         # C4: only cross-check a season whose counted weeks are all CLOSED. A week still
         # in progress, or a --week cutoff, would differ from the banked total for an
@@ -555,23 +658,24 @@ def main(argv=None):
         # the wins accounting (Addendum 2): computed for the whole league, saved for the web UI
         acc = None
         if ids:
-            projected, detail = _projected_lineups(season, lid, info, ids, starters)
+            projected, detail, best = _projected_lineups(season, lid, info, ids, starters, rosters, elig)
             if projected:
                 acc = accounting(scores, projected, pairs, results=results or None,
-                                 median=per_week == 2, starters=detail, keep_sims=True)
+                                 median=per_week == 2, starters=detail, keep_sims=True, best=best)
         if acc:
             sims = acc["teams"].get(team, {}).get("_sims_total")
             for t in acc["teams"].values():
                 t.pop("_sims_total", None)
             _save_accounting(season, acc)
-            if sims and mine_everywhere:
+            if sims:
                 pool.append((season, acc["teams"][team]["parts"]["total"]["wins"], sims))
         res["accounting"] = team_view(acc, team)
         payload.append(res)
         if not a.json:
             render(res, season, ov.get(team, team), len(scores))
 
-    # "year in and year out": the owner's total luck summed over every season measured. Added
+    # "year in and year out": the team's total luck summed over every season measured (F96:
+    # any team's, now that older seasons follow that team's owner). Added
     # after the per-season numbers were seen, and labelled so (docs/LUCK_LEDGER.md).
     pooled = across_seasons([(w, s) for _season, w, s in pool]) if len(pool) > 1 else None
     if pooled:

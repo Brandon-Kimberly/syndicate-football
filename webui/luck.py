@@ -108,6 +108,8 @@ def report(root, team):
 
 
 # ---- the wins accounting (docs/LUCK_LEDGER.md Addendum 2, owner ruling 2026-11-27) ----------
+# Addendum 3 adds lineup calls (lineup_calls below): a decision measure shown beside the luck,
+# never a bar and never in the total. A file saved before it has none, and the page says nothing.
 # One total, in wins, from parts that add up exactly; the five above stay separate and are
 # never added in. scripts.luck_ledger computes it (it needs Sleeper's archived projections,
 # which the web UI never fetches) and saves the league-wide result under data/local/luck/;
@@ -177,6 +179,26 @@ def explain_lines(view):
     return out
 
 
+def lineup_calls(view):
+    """Addendum 3, for the pages: the roster's best lineups against the ones started. A
+    DECISION measure, shown beside the luck and never in its bars or its total. None for a
+    file written before lineup calls existed."""
+    calls, roster = (view or {}).get("lineup_calls"), (view or {}).get("roster_expected")
+    if not calls or not roster:
+        return None
+    w = float(calls["wins"])
+    return {"wins": w, "wins_text": f"{w:+.1f}", "tone": "neg" if w <= -0.05 else "",
+            "points_per_week": float(calls.get("points_per_week") or 0.0),
+            "points_text": f"{float(calls.get('points_per_week') or 0.0):+.1f}",
+            "weeks_short": calls.get("weeks_short"), "weeks": len((view or {}).get("weeks") or []),
+            "roster": float(roster["total"]), "started": float(view["expected"]["total"]),
+            "sentence": (f"The roster's best lineups were projected to earn {float(roster['total']):.1f} wins; "
+                         f"the lineups started, {float(view['expected']['total']):.1f}. Lineup calls: {w:+.1f} wins "
+                         f"({float(calls.get('points_per_week') or 0.0):+.1f} points a week; a better lineup was on the "
+                         f"roster in {calls.get('weeks_short')} of {len((view or {}).get('weeks') or [])} weeks). "
+                         "This is a decision, not luck, so it is never added into the luck.")}
+
+
 def standings_rows(acc):
     rows = []
     for r in (acc or {}).get("standings") or []:
@@ -229,6 +251,7 @@ def accounting_for(root, team, closed_weeks=None):
     return {"missing": False, "season": acc.get("season"), "computed_at": acc.get("computed_at"),
             "weeks": len(view["weeks"]), "stale": bool(closed_weeks and max(closed_weeks) > last),
             "head": headline(view), "bars": bar_rows(view), "explain": explain_lines(view),
+            "calls": lineup_calls(view),
             "standings": standings_rows(acc), "left_out": acc.get("left_out") or []}
 
 
