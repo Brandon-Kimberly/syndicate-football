@@ -247,6 +247,36 @@ words: share ≥ 0.25 **ordinary**; 0.10-0.25 **a bit unusual**; 0.025-0.10 **un
 - **A commissioner override counts as points scored** (2026 week 2).
 - **Eight teams, three seasons, several parts.** Something will look unusual by chance.
 
+### Noted at implementation (2026-11-27, after the numbers were seen)
+
+- **Schedule luck reads rarer here than its registered z says, and this one is closer to
+  right.** The registered standard error treats each game as a coin at the season-average
+  all-play rate. But a week you outscore everyone, or score less than everyone, cannot be
+  won or lost to the schedule, so the real spread is smaller. Quantum Ferrets 2026 (weeks
+  1-11): registered ±1.65 wins, the actual weekly rates give ±1.37, and the simulated null
+  about ±1.25. The same −1.86 reads z −1.12 (about 1 in 8 one-sided) in the five-measure
+  table and about 1 in 19 in the accounting. The registered measure is left as registered.
+- **Across seasons: added after the per-season numbers were seen.** The owner's question was
+  "year in and year out", so the script also sums each season's total luck for the owner's
+  roster and compares it with the sum of one simulated season from each, each season's
+  draws shuffled first (seed 20261127) so no two seasons share a random stream. It is only
+  computed for the owner's own roster: `--team` names a current team, and the older seasons
+  fall back to the owner's.
+- **Median luck is player luck too.** The median game has no schedule, so its part is the
+  players-against-projection effect in the median games. The page labels it that way.
+
+### Readings at implementation (2026-11-27), for the record
+
+Quantum Ferrets and its earlier names; 2026 through week 11:
+
+| season | actual wins | projected to earn | players, head-to-head | schedule | players, median | total | rank as played → luck removed |
+|---|---|---|---|---|---|---|---|
+| 2024 | 14 | 16.3 | +0.1 | −1.1 | −1.2 | −2.3 | 6th → 4th |
+| 2025 | 4 | 5.5 | −0.3 | −1.1 | — | −1.5 | 8th → 8th |
+| 2026 | 10 | 13.8 | −0.9 | −1.9 | −1.1 | −3.8 | 4th → 1st |
+
+Together −7.5 wins over three seasons (about 1 in 21 three-season runs).
+
 ## Usage
 
 ```

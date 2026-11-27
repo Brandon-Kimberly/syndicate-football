@@ -21,6 +21,14 @@ re-measure the model's error and call it luck.
 
 Read the standard errors before the deltas. At two or three weeks nothing here is
 significant and the tool will say so.
+
+Since 2026-11-27 it leads with the WINS ACCOUNTING (fantasy_sim.luck_accounting; registered as
+docs/LUCK_LEDGER.md Addendum 2): actual wins against what the projections of the lineups
+actually started earned, split into players-vs-projection, schedule and median parts that add
+up exactly, with "about 1 in N" from a simulated null and luck-neutral standings. It fetches
+Sleeper's archived weekly projections (cached under data/local/luck/projections) and saves the
+league-wide result to data/local/luck/accounting_<season>.json for the web UI's luck page.
+With --all and no other --team, it also totals the owner's luck across the seasons.
 """
 import argparse
 import json
@@ -32,6 +40,7 @@ import requests
 
 from fantasy_sim.config import BASE_URL, LEAGUE_ID, MY_TEAM, TEAM_NAME_MAP, KNOWN_LEAGUE_IDS
 from fantasy_sim.league_chain import resolve_chain
+from fantasy_sim.luck_accounting import accounting, across_seasons
 from fantasy_sim.luck_ledger import (MIN_WEEKS_FOR_INFERENCE, direction, ledger,
                                      two_sided_p)
 from fantasy_sim.weekly_report import real_name_overlay
@@ -88,10 +97,11 @@ def closed_weeks(counted, per_week):
     return min(games) // per_week
 
 
-def _season_data(lid, info, names, through_week=None):
+def _season_data(lid, info, names, through_week=None, ids=None):
     """weekly_scores, pairs, starter_points for a season -- completed weeks only. The caller
     passes `through_week` = the last CLOSED week (closed_weeks), never just a week that has
-    started (F95)."""
+    started (F95). `ids`, when given, is filled with {week: {team: [starter player id, ...]}}
+    in the same order as starter_points (the wins accounting prices those players)."""
     last = int(info.get("settings", {}).get("playoff_week_start") or 15) - 1
     if through_week is not None:
         last = min(last, int(through_week))
@@ -111,11 +121,15 @@ def _season_data(lid, info, names, through_week=None):
             if pts > 0:
                 live = True
             pp = m.get("players_points") or {}
-            srow[t] = [float(pp.get(str(s)) or 0.0) for s in (m.get("starters") or [])
-                       if s and str(s) != "0"]
+            sids = [str(s) for s in (m.get("starters") or []) if s and str(s) != "0"]
+            srow[t] = [float(pp.get(s) or 0.0) for s in sids]
+            if ids is not None:
+                ids.setdefault(wk, {})[t] = sids
             if m.get("matchup_id") is not None:
                 by_mid[m["matchup_id"]].append(t)
         if not live:
+            if ids is not None:
+                ids.pop(wk, None)
             continue                     # week hasn't been played
         scores[wk] = row
         starters[wk] = srow
@@ -237,6 +251,169 @@ def _projections(season):
     return out or None
 
 
+# ----------------------------------------------------------------- the wins accounting
+# Registered in docs/LUCK_LEDGER.md (Addendum 2) before this code. Its inputs: Sleeper's
+# weekly projection of every player a team STARTED, scored under the settings in force that
+# week. Sleeper keeps past weeks' projections (checked 2026-11-27 against the sync's own
+# pre-game log: 103 of 104 starters within 0.5 points, weeks 3 and 10).
+
+LUCK_DIR = os.path.join("data", "local", "luck")     # gitignored, never served raw
+
+
+def _settings_by_week(season, lid, info, weeks):
+    """{week: scoring settings in force}. The current season reads the eras the banked scores
+    were checked against (data/current/banked_scores.json + data/logs/scoring_settings.jsonl);
+    any other week, or any season without them, gets the league's settings as served -- the
+    settings its box scores are re-scored under."""
+    default = (info or {}).get("scoring_settings") or {}
+    out = {w: default for w in weeks}
+    if str(lid) != str(LEAGUE_ID):
+        return out
+    try:
+        from fantasy_sim.banked_scores import eras
+        from fantasy_sim.storage import BANKED_SCORES_FILE, SCORING_SETTINGS_FILE
+        with open(BANKED_SCORES_FILE, encoding="utf-8") as fh:
+            meta = (json.load(fh) or {}).get("_meta") or {}
+        if str(meta.get("season")) != str(season) or not meta.get("verified"):
+            return out
+        by_time = {e["observed_at"]: e["settings"] for e in eras(SCORING_SETTINGS_FILE, season)}
+        for w in weeks:
+            got = by_time.get((meta.get("eras") or {}).get(str(w)))
+            if got:
+                out[w] = got
+    except (OSError, ValueError, KeyError, ImportError):
+        pass
+    return out
+
+
+def _week_projection(season, week, settings):
+    """{player_id: projected points} for one CLOSED week, scored under `settings`, cached
+    under data/local/luck/projections (a past week's projection does not change). {} when
+    Sleeper serves nothing; an empty answer is never cached."""
+    import hashlib
+    from fantasy_sim.banked_scores import player_points
+    digest = hashlib.sha256(json.dumps(settings or {}, sort_keys=True).encode("utf-8")).hexdigest()[:12]
+    path = os.path.join(LUCK_DIR, "projections", f"{season}_w{int(week):02d}_{digest}.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        pass
+    try:
+        raw = _get(f"{BASE_URL}/projections/nfl/regular/{season}/{week}") or {}
+    except Exception:
+        return {}
+    out = {}
+    for pid, entry in raw.items():
+        if not isinstance(entry, dict):
+            continue
+        pts = player_points(entry.get("stats", entry), settings)
+        if pts:
+            out[str(pid)] = pts
+    if out:
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            tmp = path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(out, fh)
+            os.replace(tmp, path)
+        except OSError:
+            pass
+    return out
+
+
+def _projected_lineups(season, lid, info, ids, starters):
+    """(projected {week: {team: total}}, detail {week: {team: [(projected, scored), ...]}})
+    for every started player. A week Sleeper serves no projections for is left out."""
+    weeks = sorted(ids)
+    settings = _settings_by_week(season, lid, info, weeks)
+    projected, detail = {}, {}
+    for w in weeks:
+        proj = _week_projection(season, w, settings[w])
+        if not proj:
+            continue
+        for t, pids in ids[w].items():
+            got = (starters.get(w) or {}).get(t) or []
+            pairs = [(float(proj.get(p, 0.0)), float(got[i]) if i < len(got) else 0.0)
+                     for i, p in enumerate(pids)]
+            projected.setdefault(w, {})[t] = round(sum(p for p, _s in pairs), 2)
+            detail.setdefault(w, {})[t] = pairs
+    return projected, detail
+
+
+def _save_accounting(season, acc):
+    """The league-wide accounting for the web UI's luck page (data/local/luck/, gitignored)."""
+    import datetime
+    doc = dict(acc, season=str(season),
+               computed_at=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
+    path = os.path.join(LUCK_DIR, f"accounting_{season}.json")
+    try:
+        os.makedirs(LUCK_DIR, exist_ok=True)
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(doc, fh, indent=1)
+        os.replace(tmp, path)
+    except OSError:
+        pass
+
+
+def team_view(acc, team):
+    """One team's slice of the league accounting, with the league-level fields it needs."""
+    if not acc or team not in (acc.get("teams") or {}):
+        return None
+    return {k: acc[k] for k in ("weeks", "left_out", "median", "sigma", "simulations", "seed", "early", "standings")} \
+        | {"team": team, **acc["teams"][team]}
+
+
+def _wins(v):
+    return f"{v:+.1f} win{'' if abs(round(v, 1)) == 1 else 's'}"
+
+
+def _how_rare(part):
+    if part.get("share") is None:
+        return "too early to say"
+    if part["way"] == "neutral":
+        return "no luck either way"
+    n = part.get("one_in")
+    odds = f"about 1 in {n}" if n else f"rarer than 1 in {part['one_in_floor']}"
+    return f"{part['word']}: {odds} seasons are this {part['way']} or more"
+
+
+def render_accounting(view, team_label, ov=None):
+    """The headline: wins, against what the lineups started were projected to earn."""
+    ov = ov or {}
+    a, e, p, x = view["actual"], view["expected"], view["parts"], view["explain"]
+    total = p["total"]["wins"]
+    print(f"\n  WINS AND LUCK ({len(view['weeks'])} weeks)")
+    print(f"    {a['total']:g} wins; the lineups you started were projected to earn {e['total']:.1f}.")
+    verb = "cost you" if total < 0 else "gave you"
+    print(f"    Luck {verb} {abs(total):.1f} win{'s' if abs(round(total, 1)) != 1 else ''} "
+          f"({_how_rare(p['total'])}).")
+    rows = [("players vs projection", p["performance"]), ("schedule", p["schedule"])]
+    if p.get("median"):
+        rows.append(("median games", p["median"]))
+    for label, part in rows:
+        print(f"      {label:22s} {_wins(part['wins']):>11s}   {_how_rare(part)}")
+    print(f"      {'total':22s} {_wins(total):>11s}   the three added; nothing else goes in")
+    print(f"    Standings: {_ordinal(view['actual_rank'])} as played, {_ordinal(view['neutral_rank'])} "
+          f"with every team's luck taken out.")
+    bits = []
+    if x.get("vs_projection_relative") is not None:
+        bits.append(f"starters {abs(x['vs_projection_relative']):.1f} points a week "
+                    f"{'above' if x['vs_projection_relative'] >= 0 else 'below'} projection, compared with the league")
+    if x.get("dnp_points_relative") is not None:
+        bits.append(f"{abs(x['dnp_points_relative']):.1f} points a week "
+                    f"{'more' if x['dnp_points_relative'] >= 0 else 'less'} than the league lost to starters who scored nothing")
+    if bits:
+        print("    Where it came from (not added in): " + "; ".join(bits) + ".")
+    if view.get("left_out"):
+        print(f"    Weeks with no projections, left out: {', '.join(str(w) for w in view['left_out'])}.")
+
+
+def _ordinal(n):
+    return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
+
+
 def _fmt(metric, keys, label, name, weeks,
          absent="-- not measurable for this season --"):
     if metric is None:
@@ -264,6 +441,9 @@ def _fmt(metric, keys, label, name, weeks,
 
 def render(res, season, team_label, n_weeks):
     print(f"\n=== LUCK LEDGER -- {team_label}, {season} ({n_weeks} completed weeks) ===")
+    if res.get("accounting"):
+        render_accounting(res["accounting"], team_label)
+    print("\n  THE FIVE REGISTERED MEASURES (each on its own; never added to the above)")
     print("  pre-registered definitions; every metric differenced against the league")
     d = res.get("banked_disagreement")
     absent = ("-- WITHHELD, the record was rewritten (see below) --" if d
@@ -319,6 +499,8 @@ def main(argv=None):
 
     ov = real_name_overlay()
     payload = []
+    pool = []                                   # (season, total luck, simulated totals): mine only
+    mine_everywhere = a.team in (None, "", MY_TEAM)
     for season, lid, info in chain:
         names = _team_names(lid, info)
         per_week = 2 if (info.get("settings") or {}).get("league_average_match") else 1
@@ -328,7 +510,8 @@ def main(argv=None):
         through = closed_weeks(counted, per_week)
         if a.week and (str(lid) == str(LEAGUE_ID) or a.league_id):
             through = a.week if through is None else min(through, a.week)
-        scores, pairs, starters = _season_data(lid, info, names, through)
+        ids = {}
+        scores, pairs, starters = _season_data(lid, info, names, through, ids=ids)
         if not scores:
             print(f"\n=== {season}: no completed weeks ===")
             continue
@@ -369,13 +552,48 @@ def main(argv=None):
                      projections=_projections(season), banked_wins=banked,
                      results=results or None, points_against=pa, median=per_week == 2)
         res["season"] = season
+        # the wins accounting (Addendum 2): computed for the whole league, saved for the web UI
+        acc = None
+        if ids:
+            projected, detail = _projected_lineups(season, lid, info, ids, starters)
+            if projected:
+                acc = accounting(scores, projected, pairs, results=results or None,
+                                 median=per_week == 2, starters=detail, keep_sims=True)
+        if acc:
+            sims = acc["teams"].get(team, {}).get("_sims_total")
+            for t in acc["teams"].values():
+                t.pop("_sims_total", None)
+            _save_accounting(season, acc)
+            if sims and mine_everywhere:
+                pool.append((season, acc["teams"][team]["parts"]["total"]["wins"], sims))
+        res["accounting"] = team_view(acc, team)
         payload.append(res)
         if not a.json:
             render(res, season, ov.get(team, team), len(scores))
 
+    # "year in and year out": the owner's total luck summed over every season measured. Added
+    # after the per-season numbers were seen, and labelled so (docs/LUCK_LEDGER.md).
+    pooled = across_seasons([(w, s) for _season, w, s in pool]) if len(pool) > 1 else None
+    if pooled:
+        pooled["season_list"] = [s for s, _w, _s in pool]
+        if payload:
+            payload[0]["across_seasons"] = pooled
+        if not a.json:
+            render_across(pooled, pool)
     if a.json:
         print(json.dumps(payload, indent=1))
     return 0
+
+
+def render_across(pooled, pool):
+    print(f"\n=== ACROSS {pooled['seasons']} SEASONS ({', '.join(s for s, _w, _s in pool)}) ===")
+    for season, w, _s in pool:
+        print(f"    {season}: {_wins(w)}")
+    n = pooled.get("one_in")
+    odds = f"about 1 in {n}" if n else f"rarer than 1 in {pooled['one_in_floor']}"
+    print(f"    Together: luck {'cost' if pooled['wins'] < 0 else 'gave'} you {abs(pooled['wins']):.1f} wins "
+          f"({pooled['word']}: {odds} runs of {pooled['seasons']} seasons are this {pooled['way']} or more).")
+    print("    (This total was added after the per-season numbers were seen: docs/LUCK_LEDGER.md.)")
 
 
 if __name__ == "__main__":

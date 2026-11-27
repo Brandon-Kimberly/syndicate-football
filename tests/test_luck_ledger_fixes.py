@@ -20,6 +20,7 @@ The fixtures are fictional throughout: no league, team or person here is real.
 import io
 import json
 import random
+import tempfile
 import unittest
 from contextlib import redirect_stdout
 from unittest import mock
@@ -214,6 +215,7 @@ def _run(fake, *argv):
             mock.patch.object(sl, "_as_played", lambda season: {}), \
             mock.patch.object(sl, "_banked", lambda season: {}), \
             mock.patch.object(sl, "_projections", lambda season: None), \
+            mock.patch.object(sl, "LUCK_DIR", tempfile.mkdtemp()), \
             redirect_stdout(buf):
         sl.main(["--json", *argv])
     return {r["season"]: r for r in json.loads(buf.getvalue())}
