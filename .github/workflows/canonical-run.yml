@@ -35,9 +35,14 @@ on:
     - cron: "0 13 * * 3"
     - cron: "0 13 * * 4"
     - cron: "30 17 * * 4"
-    # Sunday fires (moved 2h earlier 2026-10-13). GitHub starts these 3-6h after the cron
-    # time, so 09:30 lands about 12:30-15:40 UTC and 10:30 is the retry; 12:30 only helps in
-    # PST (deadline 18:00 UTC). All three sit after the window opens (08:00 UTC in PST).
+    # Sunday fires (moved 2h earlier 2026-10-13; two earlier fires added 2026-11-27). The lag
+    # kept rising: re-measured 2026-11-27, median 6.31h and max 7.75h, so 09:30 started at
+    # 17:14 UTC on 11-22 and its row landed 34 minutes before the deadline (17:00 UTC PDT /
+    # 18:00 PST). 08:07 and 08:37 sit just after the window opens (08:00 UTC in PST) and off
+    # the top of the hour; a fire that finds the window covered stops before syncing, so the
+    # extra fires spend no Odds credits. tests/test_canonical_schedule holds these to the lag.
+    - cron: "7 8 * * 0"
+    - cron: "37 8 * * 0"
     - cron: "30 9 * * 0"
     - cron: "30 10 * * 0"
     - cron: "30 12 * * 0"
