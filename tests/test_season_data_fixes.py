@@ -111,5 +111,42 @@ class TestTheBlendDoesNotUndoTheNeutralisation(unittest.TestCase):
         self.assertGreater(eng.baselines["HIGH"]["mean"], 20.0 * f["HIGH"])
 
 
+class TestTheBacktestInflationIsNotAppliedToLiveProjections(unittest.TestCase):
+    """F93. INTERVAL_INFLATION (aleatoric x1.41, B7) was fitted on the 2025 points backtest,
+    whose every baseline is a POSITIONAL-ONLY prior (backtest_season.build_blank_slate_baselines;
+    Sleeper keeps no historical week-specific projections). Live baselines are Sleeper's
+    week-specific projections, which are much sharper -- and applied to them the inflation made
+    every live interval too wide: 88 pre-kickoff canonical team-weeks (2026 weeks 1-11) came in
+    at rms z 0.77 with 90% inside the 80% band and 65% inside the 50% band, and healthy quoted
+    starters (n=578, weeks 6-11) at rms z 0.72, 84% inside 1 sd, 100% inside 2 sd --
+    FORECAST_WATCH's "too wide" bar, met at weeks 5, 6 and 7. Removing the inflation's total-sd
+    scale (1.272, from B7's own 62.5/37.5 aleatoric/epistemic split) projects those 88
+    team-weeks to rms z 0.98, 82% / 55%. The constant stays exactly where it was measured:
+    baselines that are NOT this week's projection (a positional prior, a carried mean, an
+    auto-imputed zero) -- the same `projection_source` convention the environment
+    neutralisation already uses."""
+
+    def test_a_this_week_projection_is_not_inflated(self):
+        from fantasy_sim.simulation import _inflate_aleatoric
+        d = {"live": {"mean": 12.0, "std_aleatoric": 4.0}}
+        _inflate_aleatoric(d, 1.41)
+        self.assertAlmostEqual(d["live"]["std_aleatoric"], 4.0)
+
+    def test_what_is_not_this_weeks_projection_is_inflated(self):
+        from fantasy_sim.simulation import _inflate_aleatoric
+        d = {"prior": {"std_aleatoric": 4.0, "projection_source": "positional_prior"},
+             "carried": {"std_aleatoric": 4.0, "projection_source": "carried_log"},
+             "imputed": {"std_aleatoric": 4.0, "auto_imputed": True}}
+        _inflate_aleatoric(d, 1.41)
+        for k in d:
+            self.assertAlmostEqual(d[k]["std_aleatoric"], 4.0 * 1.41, msg=k)
+
+    def test_the_backtest_marks_its_positional_priors(self):
+        """So the backtest the constant was fitted on still receives it, byte-for-byte."""
+        from fantasy_sim.backtest_season import build_blank_slate_baselines
+        b = build_blank_slate_baselines({"T": [{"name": "P", "pos": "WR", "team": "DET"}]})
+        self.assertEqual(b["P"].get("projection_source"), "positional_prior")
+
+
 if __name__ == "__main__":
     unittest.main()
