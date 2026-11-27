@@ -33,7 +33,9 @@ except ImportError:          # pragma: no cover
 OK = "OK"
 
 
-def _league_accounting(teams, weeks, seed=1):
+def _league_accounting(teams, weeks, seed=1, best=False):
+    """`best`: also each team's best-lineup projection (Addendum 3), 0-12 points above what it
+    started; without it the file is one written before lineup calls existed."""
     rng = random.Random(seed)
     scores, proj, pairs = {}, {}, {}
     for w in weeks:
@@ -42,7 +44,11 @@ def _league_accounting(teams, weeks, seed=1):
         order = list(teams)
         rng.shuffle(order)
         pairs[w] = [(order[i], order[i + 1]) for i in range(0, len(order) - 1, 2)]
-    return accounting(scores, proj, pairs, median=True, sims=200)
+    if not best:
+        return accounting(scores, proj, pairs, median=True, sims=200)
+    other = random.Random(seed + 1000)              # its own stream: the fixture above is unchanged
+    top = {w: {t: p + other.uniform(0, 12) for t, p in row.items()} for w, row in proj.items()}
+    return accounting(scores, proj, pairs, median=True, sims=200, best=top)
 
 
 @unittest.skipUnless(HAVE_FLASK, "flask not installed")
@@ -132,6 +138,33 @@ class TestTheLuckPage(Case):
         self.assertNotIn('href="/tools/luck_ledger"', simple)
         self.assertIn("shows here once the league's data has next been brought up to date", visible_text(simple))
 
+    def test_lineup_calls_are_a_decision_beside_the_luck_in_both_views(self):
+        """Addendum 3: the roster's best lineups' expected wins and the lineup calls, labelled a
+        decision and kept out of the bars and the luck total."""
+        acc = _league_accounting(self.teams, range(1, 3), best=True)
+        self.save(acc)
+        mine = acc["teams"][MY_TEAM]
+        for mode in ("dev", "simple"):
+            with self.subTest(mode=mode):
+                body = self.get("/luck", mode)
+                text = visible_text(body)
+                self.assertIn("Lineup calls", text)
+                self.assertIn("a decision, not luck", text)
+                self.assertIn(f"{mine['lineup_calls']['wins']:+.1f}", text)
+                self.assertIn(f"{mine['roster_expected']['total']:.1f}", text)
+                self.assertEqual(body.count('<div class="lb"') + body.count('<div class="lb tot"'), 4,
+                                 "lineup calls are no bar beside the luck parts")
+                self.assertIn("Lineup calls", text[text.index("Standings with every team's luck taken out"):],
+                              "and a column in the standings")
+                if mode == "simple":
+                    self.assertEqual([t for t in DEV_TERMS if t in text], [])
+
+    def test_a_file_from_before_lineup_calls_still_reads(self):
+        self.save(_league_accounting(self.teams, range(1, 3)))
+        text = visible_text(self.get("/luck", "simple"))
+        self.assertIn("Wins and luck", text)
+        self.assertNotIn("Lineup calls", text)
+
     def test_another_team_gets_its_own_numbers(self):
         acc = _league_accounting(self.teams, range(1, 3))
         self.save(acc)
@@ -214,6 +247,32 @@ class TestTheJobPage(Case):
                      across_seasons={"wins": -4.0, "share": 0.06, "word": "unusual", "way": "unlucky", "one_in": 17,
                                      "one_in_floor": 4000, "seasons": 2, "season_list": ["2026", "2025"]}),
                 dict(five, team="Old Name", season="2025", weeks=list(range(1, 15)), accounting=older)]
+
+    def test_the_job_page_shows_lineup_calls_as_a_decision(self):
+        acc = _league_accounting(self.teams, range(1, 9), best=True)
+        from scripts.luck_ledger import team_view
+        mine = team_view(acc, MY_TEAM)
+        payload = [dict(team=MY_TEAM, season="2026", weeks=list(range(1, 9)), accounting=mine),
+                   dict(team="Old Name", season="2025", weeks=list(range(1, 15)), accounting=dict(mine, team="Old Name"))]
+        view = render.record_view(payload, tool="luck_ledger")
+        tiles = {t["k"]: t for t in view["tiles"]}
+        self.assertIn("lineup calls", tiles)
+        self.assertEqual(tiles["lineup calls"]["v"], f"{mine['lineup_calls']['wins']:+.1f}")
+        self.assertIn("decision", tiles["lineup calls"]["s"])
+        season = view["sections"][0]
+        self.assertEqual(season["title"], "Season by season")
+        labels = [c["label"] for c in season["columns"]]
+        self.assertIn("roster's best lineups earn", labels)
+        self.assertIn("lineup calls", labels)
+        self.assertLess(labels.index("luck"), labels.index("lineup calls"), "after the luck, never inside it")
+        runner, jid = self._job(payload)
+        for mode in ("dev", "simple"):
+            with self.subTest(mode=mode):
+                text = visible_text(self.get(render.job_url({"id": jid}), mode, runner=runner))
+                self.assertIn("lineup calls", text.lower())
+                self.assertIn("a decision, not luck", text)
+                if mode == "simple":
+                    self.assertEqual([t for t in DEV_TERMS if t in text], [])
 
     def test_the_view_leads_with_the_accounting(self):
         view = render.record_view(self._payload(), tool="luck_ledger")
