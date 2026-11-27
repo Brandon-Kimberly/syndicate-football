@@ -603,7 +603,7 @@ class FantasySimulationEngine:
         Extracted (F6) so the intended lineup -- solved before this week's onsets are drawn --
         values players exactly as the final assignment does; behaviour byte-identical to the
         inline block it replaces (golden master)."""
-        v_spr, v_opp = veg['spread'], veg['opponent']
+        v_opp = veg['opponent']
         script_mult = 1.0
         # Empirically-derived defensive tiers (see nfl_defensive_tiers.json,
         # built from real completed-game points-allowed data). Applied to
@@ -620,18 +620,13 @@ class FantasySimulationEngine:
         if v_opp in top_def and p_pos == 'RB': script_mult -= top_pen
         elif v_opp in bottom_def and p_pos == 'RB': script_mult += bot_bonus
 
-        # UNVERIFIED (carried over, 2026-10-12): the +0.15 / -0.10 RB spread effect, the +0.10
-        # pass-catcher effect and the +0.10 DL/DEF effect on favourite spreads below have no measured source. They are not in config.py,
-        # and no audit measurement sizes them (AUDIT_PLAN's game-script work measured QB/WR
-        # correlation, not these means). They may also fire on the same favourite games the
-        # environment ratio already rewards (not measured), so they are the first suspects when a
-        # team's quote runs high (docs/audit/FORECAST_WATCH.md). Changing them is a MAJOR.
-        if v_spr <= -5.5:
-            if p_pos == 'RB': script_mult += 0.15
-            elif p_pos in ['DL', 'DEF']: script_mult += 0.10
-        elif v_spr >= 5.5:
-            if p_pos in ['QB', 'WR', 'TE']: script_mult += 0.10
-            elif p_pos == 'RB': script_mult -= 0.10
+        # F91 (2026-11-27, MAJOR): the spread effects that used to follow here (+0.15 favourite RB,
+        # -0.10 underdog RB, +0.10 underdog QB/WR/TE, +0.10 favourite DL/DEF) had no source and were
+        # REMOVED on measurement: on 2026 weeks 6-11 favoured RBs came in 4.04 below their
+        # multiplied expectation (se 1.45, 5 of 6 weeks) and 1.44 below without the term; every
+        # boosted group missed the same way and the underdog penalties over-corrected. A spread is
+        # already in the implied total the environment ratio applies. tests/test_season_data_fixes
+        # pins it.
         return script_mult
 
     def _apportion_vacated_volume(self, team_vacated_volume, injury_clocks, newly_injured_this_week):
