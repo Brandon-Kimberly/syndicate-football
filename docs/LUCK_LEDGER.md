@@ -261,7 +261,9 @@ words: share ≥ 0.25 **ordinary**; 0.10-0.25 **a bit unusual**; 0.025-0.10 **un
   roster and compares it with the sum of one simulated season from each, each season's
   draws shuffled first (seed 20261127) so no two seasons share a random stream. It is only
   computed for the owner's own roster: `--team` names a current team, and the older seasons
-  fall back to the owner's.
+  fall back to the owner's. *(Changed by F96, 2026-11-27: that fallback was a defect -- another
+  team's run showed the owner's history. Each older season now follows the chosen team's OWNER,
+  a season that owner was not in is said and skipped, and the total applies to any team.)*
 - **Median luck is player luck too.** The median game has no schedule, so its part is the
   players-against-projection effect in the median games. The page labels it that way.
 
@@ -290,3 +292,10 @@ py -3.10 -m scripts.luck_ledger --json
 **Deliberately not wired into `scripts.weekly_report`** (owner's decision, 2026-09-21):
 a luck number in front of you every Sunday is an invitation to read noise as persecution.
 This is a thing you pull when you want it.
+
+**Kept current, still not pushed (2026-11-27).** A successful LOCAL sync -- `scripts.run_sync`
+from the Sync page or a terminal, or `scripts.weekly_report` with its sync -- reruns
+`scripts.luck_ledger --json` afterwards (`fantasy_sim.luck_refresh`), so the web UI's Luck page
+reads this week's numbers. Best effort: a failure is one `[luck]` line in the log and never
+fails the sync or the report; never on a GitHub runner, where `data/local` does not survive.
+Nothing appears in the digest, the report or Home.

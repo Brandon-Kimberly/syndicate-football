@@ -24,7 +24,7 @@ table.luck td { vertical-align: top; } table.luck td.nm { white-space: normal; m
           {"k": "standings", "v": h.actual_rank ~ " → " ~ h.neutral_rank, "s": "as played → with every team's luck taken out", "tone": ""}]) }}
 {{ lbars(acc.bars) }}
 <p class="small muted u-mt-8px u-maxw-80ch">{% for line in acc.explain %}{{ line }} {% endfor %}Points against, close games and starters who didn't play are how these parts happen, so they're in the table below and never added in.{% if dev %} "About 1 in N" is the share of 4,000 simulated seasons, each score its projection plus normal noise, at least this extreme in the same direction (docs/LUCK_LEDGER.md, Addendum 2).{% endif %}</p>
-{% if acc.stale %}<div class="note"><b>Weeks have finished since this was worked out.</b>{% if not static_site %} <a href="/tools/luck_ledger">Run the luck ledger</a> to bring it up to date.{% endif %}</div>{% endif %}
+{% if acc.stale %}<div class="note"><b>Weeks have finished since this was worked out.</b>{% if not static_site %} {% if dev %}The next sync works it out again on its own, or <a href="/tools/luck_ledger">run the luck ledger</a> now.{% else %}It catches up on its own when the league's data is next brought up to date, or <a href="/tools/luck_ledger">work it out now</a>.{% endif %}{% endif %}</div>{% endif %}
 <details class="sec"><summary>Standings with every team's luck taken out<span class="n">{{ acc.standings|length }} teams</span></summary>
 <div class="scroller"><table><thead><tr><th>Team</th><th class="num">Wins</th><th class="num">Luck-neutral wins</th><th class="num">Luck</th><th>Rank as played</th><th>Rank, luck taken out</th></tr></thead><tbody>
 {% for s in acc.standings %}<tr{% if s.team == r.team %} class="me"{% endif %}><td class="nm">{{ teamlink(s.team) }}</td><td class="num">{{ s.actual_wins|wins }}</td><td class="num">{{ s.neutral_wins|num(1) }}</td><td class="num {{ 'pos' if s.luck >= 0.05 else ('neg' if s.luck <= -0.05 else '') }}">{{ s.luck|signed(1) }}</td><td>{{ s.actual_rank_text }}</td><td>{{ s.neutral_rank_text }}</td></tr>{% endfor %}
@@ -32,7 +32,7 @@ table.luck td { vertical-align: top; } table.luck td.nm { white-space: normal; m
 <p class="small muted u-mt-8px">Luck-neutral wins are what each team's started lineups were projected to earn. Every team's luck is taken out, not only one, because the others' luck moves everyone's rank.</p></details>
 </section>
 {% elif acc and acc.missing and not static_site %}
-<section><p class="small muted">The wins accounting shows here once the luck ledger has run. <a href="/tools/luck_ledger">Run it</a>; it takes a few seconds.</p></section>
+<section><p class="small muted">The wins accounting shows here once the luck ledger has run{% if dev %} (every sync now runs it){% endif %}. <a href="/tools/luck_ledger">Run it</a>; it takes a few seconds.</p></section>
 {% endif %}
 <section>
 <h2>The five measures set before the season <span class="hint">each against the league · never added together</span></h2>
