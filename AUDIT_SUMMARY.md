@@ -413,6 +413,10 @@ than "fixed": the measurement said the code was right.
   44-49% at 5%; now 2.0-5.3% with a league-pooled weekly spread); a week counted once it
   started (week 12 on Thanksgiving); 2025's head-to-head record was "rewritten" by median wins
   it never had, withholding its schedule luck; `--week` cut finished seasons. Deltas unchanged.
+- **F96** `--team X --all` showed the owner's history under another team's name — RESOLVED:
+  older seasons were identified by MY_TEAM's owner whatever `--team` said; each is now found by
+  the chosen team's owner, an owner absent from a league is reported rather than substituted,
+  and the across-seasons total applies to any team.
 - **F90** CI reported green while the suite failed, for two months — RESOLVED: the `ci` job's
   pwsh step took its result from `coverage report`, the last native command, so every green run
   sampled 2026-09-16 → 11-01 logged `FAILED (failures=1..2)`, including at the v11.0.0 and v11.1.0

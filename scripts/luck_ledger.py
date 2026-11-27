@@ -28,7 +28,8 @@ actually started earned, split into players-vs-projection, schedule and median p
 up exactly, with "about 1 in N" from a simulated null and luck-neutral standings. It fetches
 Sleeper's archived weekly projections (cached under data/local/luck/projections) and saves the
 league-wide result to data/local/luck/accounting_<season>.json for the web UI's luck page.
-With --all and no other --team, it also totals the owner's luck across the seasons.
+With --all it also totals the team's luck across the seasons; an older season follows the
+chosen team's OWNER (F96), and says so when that owner was not in the league.
 """
 import argparse
 import json
@@ -470,6 +471,38 @@ def render(res, season, team_label, n_weeks):
               f"errors are the point.")
 
 
+def _say(to_stderr, text):
+    """A note between seasons: stdout for the text report, stderr under --json so the JSON on
+    stdout stays parseable."""
+    import sys
+    print(text, file=sys.stderr if to_stderr else sys.stdout)
+
+
+def _owner_of(team):
+    """The owner_id of the CURRENT league's roster called `team` (the pseudonym map), or None."""
+    try:
+        rosters = _get(f"{BASE_URL}/league/{LEAGUE_ID}/rosters") or []
+    except Exception:
+        return None
+    return next((r.get("owner_id") for r in rosters
+                 if TEAM_NAME_MAP.get(str(r.get("roster_id"))) == team and r.get("owner_id")), None)
+
+
+def _roster_of(lid, owner):
+    """roster_id of `owner` in league `lid` -- as owner or co-owner -- or None when that owner
+    had no team there. Never another roster in its place (F96)."""
+    if not owner:
+        return None
+    try:
+        rosters = _get(f"{BASE_URL}/league/{lid}/rosters") or []
+    except Exception:
+        return None
+    for r in rosters:
+        if r.get("owner_id") == owner or owner in (r.get("co_owners") or []):
+            return r.get("roster_id")
+    return None
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -499,8 +532,14 @@ def main(argv=None):
 
     ov = real_name_overlay()
     payload = []
-    pool = []                                   # (season, total luck, simulated totals): mine only
-    mine_everywhere = a.team in (None, "", MY_TEAM)
+    pool = []                                   # (season, total luck, simulated totals)
+    want = a.team or MY_TEAM
+    # F96: a CURRENT team is followed into older seasons by its OWNER (rosters' owner_id);
+    # before, every older season fell back to the owner of MY_TEAM, so `--team X --all`
+    # printed the owner's 2024/2025 under X's name. A name that is not a current team is
+    # looked up in each season as it stands.
+    current_team = want in set(TEAM_NAME_MAP.values())
+    owner = _owner_of(want) if current_team else None
     for season, lid, info in chain:
         names = _team_names(lid, info)
         per_week = 2 if (info.get("settings") or {}).get("league_average_match") else 1
@@ -513,19 +552,18 @@ def main(argv=None):
         ids = {}
         scores, pairs, starters = _season_data(lid, info, names, through, ids=ids)
         if not scores:
-            print(f"\n=== {season}: no completed weeks ===")
+            _say(a.json, f"\n=== {season}: no completed weeks ===")
             continue
-        team = a.team or (MY_TEAM if str(lid) == str(LEAGUE_ID) else None)
-        if team is None or team not in next(iter(scores.values())):
-            # older seasons: find my roster by owner id via the current league
-            cur_rosters = _get(f"{BASE_URL}/league/{LEAGUE_ID}/rosters")
-            uid = next((r.get("owner_id") for r in cur_rosters
-                        if TEAM_NAME_MAP.get(str(r["roster_id"])) == MY_TEAM), None)
-            old = _get(f"{BASE_URL}/league/{lid}/rosters")
-            rid = next((r["roster_id"] for r in old if r.get("owner_id") == uid), None)
-            team = names.get(rid)
+        if str(lid) == str(LEAGUE_ID) or not current_team:
+            team = want if want in next(iter(scores.values())) else None
+            why = f"no team called {ov.get(want, want)} in this league"
+        else:
+            rid = _roster_of(lid, owner)
+            team = names.get(rid) if rid is not None else None
+            why = (f"{ov.get(want, want)}'s owner was not in this league" if owner
+                   else f"could not find {ov.get(want, want)}'s owner")
         if team is None:
-            print(f"\n=== {season}: could not identify your roster ===")
+            _say(a.json, f"\n=== {season}: {why} ===")
             continue
         # C4: only cross-check a season whose counted weeks are all CLOSED. A week still
         # in progress, or a --week cutoff, would differ from the banked total for an
@@ -564,14 +602,15 @@ def main(argv=None):
             for t in acc["teams"].values():
                 t.pop("_sims_total", None)
             _save_accounting(season, acc)
-            if sims and mine_everywhere:
+            if sims:
                 pool.append((season, acc["teams"][team]["parts"]["total"]["wins"], sims))
         res["accounting"] = team_view(acc, team)
         payload.append(res)
         if not a.json:
             render(res, season, ov.get(team, team), len(scores))
 
-    # "year in and year out": the owner's total luck summed over every season measured. Added
+    # "year in and year out": the team's total luck summed over every season measured (F96:
+    # any team's, now that older seasons follow that team's owner). Added
     # after the per-season numbers were seen, and labelled so (docs/LUCK_LEDGER.md).
     pooled = across_seasons([(w, s) for _season, w, s in pool]) if len(pool) > 1 else None
     if pooled:
