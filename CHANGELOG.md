@@ -5,6 +5,22 @@ in it, audit counts, hardware/season blockers, backlog, and what the tag does *n
 claim) live on the linked release. MAJOR means the model's predictions changed
 materially (see the release policy in `CLAUDE.md`).
 
+## [v12.0.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v12.0.0) — 2026-11-27 (MAJOR)
+
+**Eleven weeks of the model's own quotes, scored against what happened, fix three things it had
+wrong.** The model's predictions change. Healthy starters were quoted 1.5 points above what they
+scored. Two causes: the point spread added unsourced boosts that every boosted group missed
+(favoured RBs came in 4.0 below, 5 of 6 weeks; F91, removed), and the Bayesian blend put back
+about 30% of the game environment F89 had stripped out (F92, now neutralised after the blend).
+And every live interval was too wide: the backtest's ×1.41 inflation was fitted on positional
+priors and applied to Sleeper's sharper week-specific projections (88 team-weeks: 90% inside the
+80% band; F93, now scoped to the priors). Measured and left alone: the environment share (0.70
+re-measured, 0.71 kept), the RB vacated-volume capture (2026's 11 absences sit inside F89's
+ten-season interval), and FAAB timing (F34's January build). Live effect on week 12: one playoff
+probability moved 5.1 points, one matchup 6.4. The goldens and both behaviour baselines were
+regenerated in commits of their own; the 2025 points backtest passes its gate. The suite goes
+2475 → 2484.
+
 ## [v11.1.1](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v11.1.1) — 2026-11-27 (PATCH)
 
 **CI tells the truth again, and a weather timeout can no longer cost a window.** For at least ten
