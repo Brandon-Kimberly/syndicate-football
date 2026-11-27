@@ -5,6 +5,17 @@ in it, audit counts, hardware/season blockers, backlog, and what the tag does *n
 claim) live on the linked release. MAJOR means the model's predictions changed
 materially (see the release policy in `CLAUDE.md`).
 
+## [v12.2.1](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v12.2.1) — 2026-11-27 (PATCH)
+
+**The luck ledger stops counting an archive gap as luck.** Sleeper's projection archive held no
+projection for five started 2026 player-weeks of players who then played, and the ledger counted
+them 0 -- their points read as luck and their benching as a lineup call (F97). By the owner's
+ruling, docs/LUCK_LEDGER.md Addendum 4 (registered before the code) prices such a player from the
+sync's last pre-kickoff projection; one who scored nothing stays 0, and 2024-25 are unchanged.
+Exactly the five were filled. Turbo Llamas' lineup calls −0.76 → −0.31; Quantum Ferrets' 2024-26
+luck −7.5 → −7.3 wins (about 1 in 18). The model is untouched: goldens 15/15 byte-identical. The
+suite goes 2555 → 2558.
+
 ## [v12.2.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v12.2.0) — 2026-11-27 (MINOR)
 
 **The luck ledger separates the roster from the lineup calls.** Beside the luck it now reports what
