@@ -70,6 +70,80 @@ class TestWorkflowBashParses(unittest.TestCase):
 
 
 @unittest.skipIf(yaml is None, "pyyaml not installed; workflow syntax guard skipped")
+@unittest.skipUnless(os.name == "nt", "the WSL-launcher trap is Windows-only")
+class TestTheSyntaxGuardRunsARealBash(unittest.TestCase):
+    """F90 (2026-11-27). On Windows, CreateProcess searches System32 BEFORE PATH, so a bare
+    "bash" resolves to C:\\Windows\\System32\\bash.exe -- the WSL launcher, not Git Bash. On a
+    machine with a WSL distro it works (this one); on the windows-latest runner there is no
+    distro, the launcher exits non-zero with its message on stdout, and the guard above
+    reported every block as unparseable with an EMPTY stderr -- on every CI run since at least
+    2026-09-16, unseen because F90's other half masked the suite's exit code. The guard must
+    be handed an absolute path to a real bash."""
+
+    def test_the_guard_is_not_handed_a_bare_name_windows_resolves_to_wsl(self):
+        from unittest import mock
+        seen = []
+        real_run = subprocess.run
+
+        def spy(argv, *a, **k):
+            seen.append(argv[0])
+            return real_run(argv, *a, **k)
+
+        with mock.patch("subprocess.run", side_effect=spy):
+            try:
+                TestWorkflowBashParses("test_every_bash_run_block_parses").test_every_bash_run_block_parses()
+            except unittest.SkipTest:
+                pass
+        self.assertTrue(seen, "the syntax guard ran no bash at all")
+        system32 = os.path.normcase(os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32"))
+        for exe in set(seen):
+            self.assertTrue(os.path.isabs(exe),
+                            f"guard runs bare {exe!r}; Windows resolves that via System32 (WSL) first")
+            self.assertFalse(os.path.normcase(exe).startswith(system32),
+                             f"guard runs the WSL launcher {exe!r}")
+
+
+class TestPwshStepsFailOnAFailedCommand(unittest.TestCase):
+    """F90 (2026-11-27). A `run:` block on a windows job defaults to pwsh, and GitHub's pwsh
+    wrapper takes the step result from $LASTEXITCODE of the LAST native command only:
+    ErrorActionPreference=stop does not apply to native exit codes. So the CI step
+
+        python -m coverage run -m unittest discover tests
+        python -m coverage report
+
+    went green whenever the report printed -- including every run since at least 2026-09-16,
+    each of which logged `FAILED (failures=1..2[, errors=..])`. The rule: in a pwsh block, a
+    native command used as a bare statement on any line but the last must be followed by an
+    explicit `$LASTEXITCODE` check."""
+
+    NATIVE = re.compile(r"^\s*(python|py|pip|git|gh|coverage)\b")
+
+    def test_no_pwsh_step_swallows_a_failed_native_command(self):
+        offenders = []
+        for name in sorted(os.listdir(WORKFLOW_DIR)):
+            if not name.endswith((".yml", ".yaml")):
+                continue
+            with open(os.path.join(WORKFLOW_DIR, name), encoding="utf-8") as f:
+                doc = yaml.safe_load(f) if yaml else None
+            if doc is None:
+                self.skipTest("pyyaml not installed")
+            for job in (doc.get("jobs") or {}).values():
+                if "windows" not in str(job.get("runs-on", "")):
+                    continue
+                for step in job.get("steps") or []:
+                    script, shell = step.get("run"), step.get("shell")
+                    if not script or shell not in (None, "pwsh", "powershell"):
+                        continue
+                    lines = [ln for ln in script.splitlines() if ln.strip() and not ln.strip().startswith("#")]
+                    for i, ln in enumerate(lines[:-1]):
+                        if self.NATIVE.match(ln) and "LASTEXITCODE" not in lines[i + 1]:
+                            offenders.append(f"{name} -> {step.get('name', '?')}: {ln.strip()[:80]}")
+        self.assertEqual(offenders, [],
+                         "pwsh steps whose failed native command cannot fail the step:\n"
+                         + "\n".join(offenders))
+
+
+@unittest.skipIf(yaml is None, "pyyaml not installed; workflow syntax guard skipped")
 class TestWorkflowBashExitStatus(unittest.TestCase):
     """The second way a cosmetic step kills a good run (2026-09-13).
 
