@@ -375,6 +375,43 @@ the ceiling is the team's own best lineup, so the absolute number is the meaning
 
 Quantum Ferrets and its earlier names: lineup calls 2024 −0.31, 2025 −0.19, 2026 −0.27 wins.
 
+## Addendum 4: a player the archive omits who then played, registered 2026-11-27
+
+**Registered after the owner saw F97's measurement**, on the owner's ruling the same day ("add a
+rule that fills those players from the sync's pre-kickoff log"), and committed before any code
+computes it. It changes one input shared by Addenda 2 and 3, so it moves registered numbers --
+the luck parts, `σ`, `E`, `E_best` and the lineup calls -- and the readings above are superseded
+by the ones recorded below. Nothing else in either addendum changes.
+
+**The gap.** Sleeper's projection archive sometimes holds no projection for a player who then
+played (2026 weeks 4, 6 and 9: five started player-weeks; the archive keeps only an ADP stub).
+Addenda 2 and 3 counted them 0, so their points read as players-vs-projection luck and their
+benching as a lineup call.
+
+**The rule.** For a player on a team's roster in a week (Sleeper's matchup `players`, starters and
+bench alike) whose archived projection, scored under that week's settings, is missing or 0:
+
+- **only if he scored** -- his points in Sleeper's matchup `players_points` that week are not
+  0.00, positive or negative. A player who scored 0.00 may have been ruled out, and then the
+  archive's 0 is right; he stays 0.
+- **his projection is the sync's own last pre-kickoff value**: from `data/logs/projection_log.jsonl`,
+  the `sleeper_mean` of the newest row for that player and week whose `synced_at` is before that
+  week's first kickoff (`data/current/nfl_schedule.json`'s `_meta.kickoffs`), the same row the team
+  page's "Before the games" uses. That is Sleeper's projection scored under the league's settings
+  at the time it was logged.
+- **No such row, or a row with 0 or less: he stays 0.** A row logged after the first kickoff is not
+  used.
+- **Only seasons with that log**, i.e. 2026 and later. 2024 and 2025 have none and are unchanged.
+- **A projection the archive has is never replaced**, however it compares with the log.
+
+Every filled player-week is counted and reported (`filled_from_log`), per season, beside the
+weeks left out.
+
+**What it cannot do.** The log's value is the last one before THURSDAY's kickoff, not the final
+pre-game one the archive keeps for everyone else, so a filled player carries the earlier number.
+A player who played but whom the sync never logged (not rostered at any sync before the first
+kickoff) still counts 0, and so does one who scored exactly 0.00 while playing.
+
 ## Usage
 
 ```
