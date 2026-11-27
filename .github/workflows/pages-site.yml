@@ -49,7 +49,7 @@ jobs:
     timeout-minutes: 60
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
     env:
       SLEEPER_LEAGUE_ID: ${{ secrets.SLEEPER_LEAGUE_ID }}
       SLEEPER_LEAGUE_ID_2025: ${{ secrets.SLEEPER_LEAGUE_ID_2025 }}
@@ -109,8 +109,27 @@ jobs:
         with:
           path: _site
 
+      # The deploy is tried twice (2026-11-27). Three of six runs failed right here with "No
+      # artifacts named github-pages were found" seconds after the upload above succeeded -- a
+      # transient miss in the artifact API. Only the DEPLOY is retried: re-running the job
+      # uploads a second github-pages artifact and fails on that instead (run 45920931673,
+      # attempt 2). The leak check is untouched: a refusal fails the build step, and every step
+      # below it is then skipped, retry included.
       - name: Deploy to GitHub Pages
         id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+
+      - name: Wait before the second try
+        if: steps.deployment.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "The first deploy failed; trying once more in 45 seconds."
+          sleep 45
+
+      - name: Deploy to GitHub Pages (second try)
+        id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v5
 
       - name: Clear the failure alarm on success
