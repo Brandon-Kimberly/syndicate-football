@@ -97,6 +97,38 @@ def _mean_sd(vals):
     return m, math.sqrt(var), n
 
 
+def _paired_se(by_week, team):
+    """Standard error of `team`'s mean weekly difference from the league average.
+
+    by_week  {week: {team: value}}  one value per team per week (points against, zero-scoring
+             starters, z against projection).
+
+    F95 (2026-11-27): this used to be the spread of the OTHER teams' season values divided by
+    sqrt(their number) -- the standard error of the league average, which says how well the
+    average is known, not how far one team can stray from it by chance. Under a null of eight
+    identical teams that rejected at 5% in 42-49% of seasons.
+
+    Now: every team's difference from that week's league average, pooled across the league
+    (the null is that the teams are alike, so they share one spread -- and eleven weeks of
+    one team's own differences gave spreads from 4 to 13 points for the same measure), then
+    divided by sqrt(the team's weeks). Differencing by week takes out what everyone shared
+    that week. Within a week the differences sum to zero, so each week carries n-1 degrees
+    of freedom and the sum of squares is divided by exactly that.
+    """
+    ss, df = 0.0, 0
+    for row in by_week.values():
+        vals = [v for v in row.values() if v is not None]
+        if len(vals) < 2:
+            continue
+        m = sum(vals) / len(vals)
+        ss += sum((v - m) ** 2 for v in vals)
+        df += len(vals) - 1
+    n = sum(1 for row in by_week.values() if row.get(team) is not None and len(row) >= 2)
+    if not df or not n or ss <= 0:
+        return 0.0
+    return math.sqrt(ss / df) / math.sqrt(n)
+
+
 def _result(results, week, team):
     """(h2h_win, median_win) as the league counted them, or None when `results` does not cover it."""
     got = ((results or {}).get(week) or {}).get(team)
@@ -105,7 +137,7 @@ def _result(results, week, team):
     return float(got[0]), (float(got[1]) if got[1] is not None else None)
 
 
-def banked_disagreement(weekly_scores, pairs, team, banked_wins, results=None):
+def banked_disagreement(weekly_scores, pairs, team, banked_wins, results=None, median=True):
     """Does the RECOMPUTED record match what the league actually banked? (C4)
 
     Every score here is what Sleeper serves TODAY, and Sleeper re-scores completed weeks
@@ -118,6 +150,10 @@ def banked_disagreement(weekly_scores, pairs, team, banked_wins, results=None):
     `h2h_wins`. THAT NAME IS WRONG and the arithmetic below is why it matters: it is TOTAL
     wins, both legs of a median-scoring week. So the comparison has to be h2h wins PLUS
     median wins, or every median win would look like a discrepancy.
+
+    `median` says whether the season HAD a median game. F95: 2025 did not, so its banked wins
+    are head-to-head wins alone, and adding median wins on top found a "disagreement" of 7
+    against 4 that did not exist -- and withheld that season's schedule luck.
 
     Returns None when the two agree, or when there is no banked record to compare -- an
     absent record is unknown, not proof of a rewrite.
@@ -145,8 +181,10 @@ def banked_disagreement(weekly_scores, pairs, team, banked_wins, results=None):
             mine, theirs = (sa, sb) if a == team else (sb, sa)
             if mine > theirs:
                 h2h += 1
-        if row.get(team) is not None and row[team] >= cut:
+        if median and row.get(team) is not None and row[team] >= cut:
             med += 1
+    if not median:
+        med = 0
     total = h2h + med
     if total == int(banked_wins):
         return None
@@ -168,7 +206,7 @@ def _median(vals):
 
 
 def ledger(weekly_scores, pairs, team, starter_points=None, projections=None,
-           banked_wins=None, results=None, points_against=None):
+           banked_wins=None, results=None, points_against=None, median=True):
     """Five measurements for one team.
 
     weekly_scores  {week: {team: points}}
@@ -182,6 +220,7 @@ def ledger(weekly_scores, pairs, team, starter_points=None, projections=None,
                    record and margins from the scores (audit 2026-09-29).
     points_against {team: total}  optional: the league's own points against, as counted, in
                    place of the re-scored box scores (opponent luck).
+    median         whether the season had a median game (F95: 2025 did not).
 
     Every value carries its own standard error. A metric whose inputs are absent comes
     back as None rather than silently defaulting -- 2024/2025 have no contemporaneous
@@ -192,7 +231,7 @@ def ledger(weekly_scores, pairs, team, starter_points=None, projections=None,
     # are re-scored history. Metrics that depend on WHO WON are withheld; metrics that do
     # not (points against, DNP counts) still report, because withholding them would throw
     # away good evidence.
-    disagreement = banked_disagreement(weekly_scores, pairs, team, banked_wins, results)
+    disagreement = banked_disagreement(weekly_scores, pairs, team, banked_wins, results, median)
     if disagreement:
         out["banked_disagreement"] = disagreement
 
@@ -201,7 +240,7 @@ def ledger(weekly_scores, pairs, team, starter_points=None, projections=None,
     w, n = ap.get(team, (0.0, 0))
     rate = (w / n) if n else 0.0
     actual, played, margins = 0, 0, []
-    pa_mine, pa_by_team = 0.0, {}
+    pa_mine, pa_by_team, pa_week = 0.0, {}, {}
     cw = cl = 0
     for week, ps in pairs.items():
         row = weekly_scores.get(week) or {}
@@ -211,6 +250,7 @@ def ledger(weekly_scores, pairs, team, starter_points=None, projections=None,
                 continue
             pa_by_team[a] = pa_by_team.get(a, 0.0) + sb
             pa_by_team[b] = pa_by_team.get(b, 0.0) + sa
+            pa_week.setdefault(week, {}).update({a: sb, b: sa})
             if team in (a, b):
                 mine, theirs = (sa, sb) if a == team else (sb, sa)
                 played += 1
@@ -244,9 +284,10 @@ def ledger(weekly_scores, pairs, team, starter_points=None, projections=None,
                     for t, v in pa_by_team.items()}
         league_avg = sum(per_game.values()) / len(per_game)
         mine_pg = pa_mine / played
-        others = [v for t, v in per_game.items() if t != team]
-        _m, sd, k = _mean_sd(others)
-        se = sd / math.sqrt(max(k, 1)) if sd else 0.0
+        # F95: the week-by-week differences carry the noise. They come from the box scores
+        # even when the delta uses the league's counted totals -- the counted record keeps
+        # totals only, and a re-scored week moves the level far more than the spread.
+        se = _paired_se(pa_week, team)
         out["opponent_luck"] = {
             "my_pa_per_game": round(mine_pg, 2),
             "league_avg_pa_per_game": round(league_avg, 2),
@@ -268,19 +309,18 @@ def ledger(weekly_scores, pairs, team, starter_points=None, projections=None,
 
     # --- DNP luck ------------------------------------------------------------
     if starter_points:
-        counts = {}
+        counts, by_week = {}, {}
         for week, row in starter_points.items():
             for t, vals in row.items():
                 z = sum(1 for v in vals if abs(float(v or 0.0)) <= DNP_EPSILON)
                 c, g = counts.get(t, (0, 0))
                 counts[t] = (c + z, g + 1)
+                by_week.setdefault(week, {})[t] = z
         rates = {t: (c / g) for t, (c, g) in counts.items() if g}
         if team in rates and len(rates) > 1:
             mine = rates[team]
-            others = [v for t, v in rates.items() if t != team]
-            _m, sd, k = _mean_sd(others)
             league = sum(rates.values()) / len(rates)
-            se = sd / math.sqrt(max(k, 1)) if sd else 0.0
+            se = _paired_se(by_week, team)
             out["dnp_luck"] = {
                 "my_dnps_per_game": round(mine, 2),
                 "league_avg": round(league, 2),
@@ -294,7 +334,7 @@ def ledger(weekly_scores, pairs, team, starter_points=None, projections=None,
 
     # --- scoring luck --------------------------------------------------------
     if projections:
-        zs = {}
+        zs, z_week = {}, {}
         for week, row in projections.items():
             scores = weekly_scores.get(week) or {}
             for t, pair in row.items():
@@ -303,12 +343,11 @@ def ledger(weekly_scores, pairs, team, starter_points=None, projections=None,
                 if got is None or not sd:
                     continue
                 zs.setdefault(t, []).append((got - mu) / sd)
+                z_week.setdefault(week, {})[t] = (got - mu) / sd
         if team in zs and len(zs) > 1:
             mine_m, _s, mine_n = _mean_sd(zs[team])
-            other_means = [_mean_sd(v)[0] for t, v in zs.items() if t != team]
-            _m2, sd2, k2 = _mean_sd(other_means)
             league_m = sum(_mean_sd(v)[0] for v in zs.values()) / len(zs)
-            se = sd2 / math.sqrt(max(k2, 1)) if sd2 else 0.0
+            se = _paired_se(z_week, team)
             out["scoring_luck"] = {
                 "my_mean_z": round(mine_m, 3), "league_mean_z": round(league_m, 3),
                 "delta": round(mine_m - league_m, 3), "se": round(se, 3),

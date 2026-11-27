@@ -615,3 +615,19 @@ h2 svg.i { box-sizing: content-box; padding: 5px; border-radius: 9px; background
     padding: 10px;
   }
 }
+
+/* Luck ledger: the wins accounting's centred bars (webui.luck.bar_rows, _macros.lbars) */
+.lbars { display: grid; gap: 12px; margin-top: 6px; }
+.lb { display: grid; grid-template-columns: minmax(12rem, 1.3fr) minmax(8rem, 2fr) minmax(10rem, 1.1fr); gap: 14px; align-items: center; }
+.lb .lbl b { font-size: 14px; }
+.lb .what { font-size: 12.5px; color: var(--muted); max-width: 46ch; }
+.lb .trk { position: relative; height: 14px; background: var(--mid); border-radius: 3px; }
+.lb .trk s { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 1px; background: var(--ink-2); }
+.lb .trk i { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: var(--c-other); }
+.lb .trk i.pos { background: var(--pos); } .lb .trk i.neg { background: var(--neg); }
+.lb .val b { font-variant-numeric: tabular-nums; font-size: 16px; } .lb .val b.pos { color: var(--pos); } .lb .val b.neg { color: var(--neg); }
+.lb .val .u { font-size: 12px; color: var(--muted); }
+.lb .odds { font-size: 12px; color: var(--muted); }
+.lb.tot { border-top: 1px solid var(--grid); padding-top: 12px; }
+.lb.tot .lbl b, .lb.tot .val b { font-size: 17px; }
+@media (max-width: 640px) { .lb { grid-template-columns: 1fr; gap: 4px; } }

@@ -34,8 +34,15 @@
 </tbody></table></div>
 {%- endmacro %}
 
+{# The luck ledger's wins accounting: one centred bar per part, one scale for all of them
+   (webui.luck.bar_rows). Blue lucky, red unlucky -- the site's pos/neg. #}
+{% macro lbars(rows) -%}
+<div class="lbars">{% for b in rows %}<div class="lb{{ ' tot' if b.total }}"><div class="lbl"><b>{{ b.label }}</b><div class="what">{{ b.what }}</div></div><div class="trk" role="img" aria-label="{{ b.label }}: {{ b.text }} wins"><i class="{{ b.tone }}" style="left:{{ b.left }}%;width:{{ b.width }}%"></i><s></s></div><div class="val"><b class="{{ b.tone }}">{{ b.text }}</b> <span class="u">wins</span><div class="odds">{{ b.odds }}</div></div></div>{% endfor %}</div>
+{%- endmacro %}
+
 {% macro section_body(s) -%}
-{% if s.kind == 'table' %}{{ datatable(s.columns, s.rows, s.me_key) }}
+{% if s.kind == 'bars' %}{{ lbars(s.bars) }}{% if s.foot %}<p class="small muted u-mt-8px u-maxw-80ch">{{ (s.foot if dev else s.foot|plain)|real }}</p>{% endif %}
+{% elif s.kind == 'table' %}{{ datatable(s.columns, s.rows, s.me_key) }}
 {% elif s.kind == 'kv' %}<dl class="kv">{% for k, v in s['items'] %}<dt>{{ k }}</dt><dd>{{ v|real }}</dd>{% endfor %}</dl>
 {% elif s.kind == 'text' %}<p class="small muted u-maxw-80ch">{{ (s.text if dev else s.text|plain)|real }}</p>{% endif %}
 {%- endmacro %}

@@ -5,6 +5,20 @@ in it, audit counts, hardware/season blockers, backlog, and what the tag does *n
 claim) live on the linked release. MAJOR means the model's predictions changed
 materially (see the release policy in `CLAUDE.md`).
 
+## [v12.1.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v12.1.0) — 2026-11-27 (MINOR)
+
+**The luck ledger now answers in wins.** It leads with actual wins against what the lineups each
+team actually started were projected to earn (Sleeper's archived weekly projections, scored under
+the settings in force), split into players-vs-projection, schedule and median-game parts that add
+up exactly, each with "about 1 in N" from 4,000 simulated seasons, plus standings with every
+team's luck taken out and, with `--all`, the owner's seasons pooled. Registered in
+docs/LUCK_LEDGER.md before the code ran, after the owner had seen the earlier numbers; the file
+says so. Shown on the luck ledger's job page and the Luck page, in both views. Also F95: three of
+the five registered measures used the standard error of the league average (null rejection
+42-49% at 5%, now 2-5%), a week counted as soon as it kicked off, 2025's schedule luck was
+withheld over median games it never had, and `--week` cut finished seasons. The model is
+untouched: goldens 15/15 byte-identical. The suite goes 2484 → 2522.
+
 ## [v12.0.0](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v12.0.0) — 2026-11-27 (MAJOR)
 
 **Eleven weeks of the model's own quotes, scored against what happened, fix three things it had

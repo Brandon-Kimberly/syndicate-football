@@ -408,6 +408,11 @@ than "fixed": the measurement said the code was right.
   not thin); FORECAST_WATCH's team bar met by no team; F30's 2026 capture 0.98 (n = 11) does not
   move 0.65 against F89's n = 316, and F30's revisit plan cannot run on the rostered-only F7 log;
   F31's blended sim still spends UNDER the band, the gap is F34's early-season timing (January).
+- **F95** the luck ledger's z-scores, unfinished weeks, median check and week cutoff — RESOLVED:
+  opponent / DNP / scoring luck used the standard error of the league AVERAGE (null rejection
+  44-49% at 5%; now 2.0-5.3% with a league-pooled weekly spread); a week counted once it
+  started (week 12 on Thanksgiving); 2025's head-to-head record was "rewritten" by median wins
+  it never had, withholding its schedule luck; `--week` cut finished seasons. Deltas unchanged.
 - **F90** CI reported green while the suite failed, for two months — RESOLVED: the `ci` job's
   pwsh step took its result from `coverage report`, the last native command, so every green run
   sampled 2026-09-16 → 11-01 logged `FAILED (failures=1..2)`, including at the v11.0.0 and v11.1.0

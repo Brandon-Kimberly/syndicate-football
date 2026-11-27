@@ -8,7 +8,7 @@ authors:
 repository-code: "https://github.com/Brandon-Kimberly/syndicate-football"
 url: "https://brandon-kimberly.github.io/syndicate-football/"
 license: MIT
-version: 12.0.0
+version: 12.1.0
 date-released: "2026-11-27"
 keywords:
   - monte-carlo
