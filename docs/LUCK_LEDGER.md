@@ -22,6 +22,11 @@ combined "luck score" is produced** — deliberately, matching `season_retrospec
 refusal of a combined verdict. A single blended number is exactly the thing that invites
 narrative-fitting.
 
+*Amended 2026-11-27 by the owner's ruling (see "Addendum 2" below):* these five are still
+never blended. One total is now reported, but it comes from an exact accounting, not from
+weights: total luck in wins = performance luck + schedule luck + median luck, where each
+part is defined independently and the three add up exactly.
+
 | metric | definition | null | lucky direction |
 |---|---|---|---|
 | `schedule_luck` | actual H2H wins − all-play expected wins | 0 | **+** |
@@ -151,6 +156,96 @@ week, A's score is set against the score of B's opponent that week; in the week 
 A is set against B instead. Scores are Sleeper's box scores, the same basis and the same
 re-scored-weeks caveat as all-play. The diagonal is A's own record on box scores, which can
 differ from the league's record where a week was re-scored (F83), and the page says so.
+
+## Addendum 2: the wins accounting, registered 2026-11-27
+
+**Registered late, and after seeing the data.** The owner asked for it on 2026-11-27, after
+reading this ledger's 2024-2026 numbers (2026 through week 11). It also reverses the "no
+combined number" rule above for exactly one figure, by the owner's ruling. Both facts are
+stated here so nobody has to dig them out of the git log. The defence is the one this file
+always relied on: the definitions below are committed BEFORE any code computes them, and
+every choice is fixed here, not tuned to the answer.
+
+**Why it is not a blend.** The five measures overlap: points against is HOW schedule luck
+happens, close games are part of it, and starters who did not play are part of how a team
+misses its projection. Adding them would count the same luck twice. The accounting below
+splits one quantity, *actual wins minus the wins the roster's projections earned*, into
+parts that do not overlap and add up exactly. The five stay as they were, shown as "where it
+came from", and are never added in.
+
+### Inputs, per season, per team, per week
+
+- **Projection `P`** = the sum, over the players the team actually STARTED (Sleeper's
+  matchup `starters`), of Sleeper's weekly projection for that player, scored under the
+  scoring settings in force that week. 2026: the eras in `data/current/banked_scores.json`
+  and `data/logs/scoring_settings.jsonl`. 2024 and 2025: that season's league settings as
+  Sleeper serves them now, the same settings its box scores are re-scored under. A started
+  player with no projection counts 0. **Sleeper only, for every season:** the engine blends
+  ESPN for offensive players, but there is no ESPN archive for 2024-25, and one basis for
+  all three seasons beats a better basis for one. Checked 2026-11-27: Sleeper's archived
+  week-3 and week-10 projections match the last pre-game value the sync logged for 103 of
+  104 starters each week, within 0.5 points.
+- **Score `S`** = the points the league counted: the banked score where the sync has a
+  verified one (2026), else Sleeper's box score.
+- **Results** = head-to-head and median wins as the league counted them (as for schedule
+  luck above). A tie is half a win.
+
+### Noise scale
+
+`σ` (one per season): the residuals `S − P`, minus that week's league-average residual,
+pooled over every team-week; sum of squares over (teams − 1) degrees of freedom per week. A
+team-week projected at 0 (2024's abandoned roster) is left out of `σ`.
+
+### The parts, in wins
+
+| part | definition |
+|---|---|
+| **expected wins** `E` | `E_h + E_m`. `E_h` = games × the mean over weeks and opponents of Φ((P_me − P_opp) / (σ√2)): the all-play win rate the projections earned, on an average schedule. `E_m` (median seasons only) = Σ weeks of P(my score finishes in the top half), from the simulation below. |
+| **performance luck** | all-play wins from the scores (the registered schedule luck's expected wins) − `E_h`. Did the starters beat their projections by more or less than everyone else's? |
+| **schedule luck** | actual head-to-head wins − all-play wins from the scores. The registered measure, unchanged. |
+| **median luck** | actual median wins − `E_m`. Median seasons only. (Not the forecast-based `median_luck` of the first addendum, which uses the model's quoted chances; that one is unchanged.) |
+| **total luck** | performance + schedule + median = actual wins − `E`. An identity. |
+| **luck-neutral wins** | `E`. |
+
+Every part sums to zero across the league each week, so the methodological commitment holds
+by construction: a bias every projection shares cancels.
+
+**Luck-neutral standings:** every team ranked by `E` beside its actual rank (wins, then
+points for). Every team's luck is taken out, not only mine, because the others' luck moves my
+rank too.
+
+**Where it came from** (explanations, never added): points a week against projection
+relative to the league, (my mean of `S − P`) − (league mean); points a week lost to starters
+who scored 0.00 with a projection above 0, relative to the league; and the five registered
+measures as they stand.
+
+### How unusual
+
+4,000 simulated seasons, seed 20261127: every team-week `S = P + σ·ε`, `ε` standard normal and
+independent, on the real schedule. For each part, the share of simulated seasons at least as
+extreme in the same direction, reported as "about 1 in N" (N = 1/share, rounded), with these
+words: share ≥ 0.25 **ordinary**; 0.10-0.25 **a bit unusual**; 0.025-0.10 **unusual**; below 0.025
+**rare**. Two-sided p (twice the share, capped at 1) in the developer view. Below
+`MIN_WEEKS_FOR_INFERENCE` (6) weeks the share is withheld, as for the five.
+
+### What it cannot do
+
+- **Picking on projections biases the projections picked.** A manager who adds or starts the
+  player with the highest projection tends to pick projections that are too high, and then
+  "underperforms" them. Everyone does it, so the league difference cancels most of it; a
+  manager who churns more than the league carries more. Not measured.
+- **Projections are not equally good everywhere.** A roster heavy in a position Sleeper
+  projects worse (IDP, kickers) can look systematically lucky or unlucky. Not separated.
+- **Lineup calls are inside `E`, not in the luck.** Starting a player projected lower than a
+  bench player lowers `E`; it does not count as bad luck. The accounting does not split
+  roster building from lineup setting.
+- **Timing.** The archive keeps the final pre-game projection. A starter ruled out after his
+  game locked keeps his projection, and his zero counts as luck. A starter left in after he
+  was already ruled out projects 0, so starting him costs `E`, not luck.
+- **The noise is modelled as normal and the same for every team.** Real weekly scores are a
+  little skewed, and an IDP-heavy roster may swing more than a quarterback-heavy one.
+- **A commissioner override counts as points scored** (2026 week 2).
+- **Eight teams, three seasons, several parts.** Something will look unusual by chance.
 
 ## Usage
 
