@@ -33,7 +33,7 @@ landed (2026-09-01). **Golden master:** three scenarios
 | F3 | 1 prerequisite | 2 | 0 | 0 | 0 |
 | **phase-era total** | **~46 findings** | **33 fixed** | **2** | **5 open, all tracked with numeric criteria** | **8 reported** |
 | F9–F35 (2026-08-30 → 09-03; see the F9–F35 section below) | 27 | 11 fixed / built | 6 measured & cleared | 10 open, tracked | 0 |
-| **grand total** | **~130 findings and tracked follow-ups** | **95 fixed or built** | — | open set enumerated in the table below | — |
+| **grand total** | **~130 findings and tracked follow-ups** | **96 fixed or built** | — | open set enumerated in the table below | — |
 
 "Open" means tracked with an acceptance criterion and a stated blocker.
 Fixed defects were verified by tests that failed against the old behaviour. Where a fix
@@ -227,7 +227,7 @@ Plus two wrong-direction predictions recorded as information (F6's null result; 
 | F22 | IDP epistemic constants (volatility half closed by F28) | derive from F7's projection log after a season |
 | F25 | team-week interval under-dispersion, bracketed r ∈ [1.15, 1.34] | quoted-vs-realized calibration from the predictions log, ~week 5–6 |
 | F15 / F26 | draft realized-value row; the ten untested sync handler bodies | season data; fake-HTTP layer respectively |
-| R1 | **machine-level fault under multi-core load — verdict: RMA.** MemTest86 clean, AV excluded, BIOS/microcode updated to 0x133 with Intel Default Settings — Arm D still fails 9/12 and 11/12, so the chip itself is degraded (Vmin Shift class). Load threshold is not safe even at 3 concurrent real engine processes (1/3 silent death, 2026-09-01, no Reliability Monitor trace). Rules: one engine process at a time; a crashed or impossible-error run is void. CI on a cloud Windows runner now provides an independent, fault-free machine certifying every commit. Re-test = Arm D 12/12 after the CPU is replaced. | AUDIT_PLAN.md R1 carries the full probe history |
+| R1 | **machine-level fault under multi-core load — verdict: RMA.** MemTest86 clean, AV excluded, BIOS/microcode updated to 0x133 with Intel Default Settings — Arm D still fails 9/12 and 11/12, so the chip itself is degraded (Vmin Shift class). Load threshold is not safe even at 3 concurrent real engine processes (1/3 silent death, 2026-09-01, no Reliability Monitor trace). Rules: one engine process at a time; a crashed or impossible-error run is void. CI on a cloud Windows runner now provides an independent, fault-free machine certifying every commit. (F90: from at least 2026-09-16 to 2026-11-27 it certified only that the coverage report printed; the suite's exit code was swallowed. Fixed 2026-11-27.) Re-test = Arm D 12/12 after the CPU is replaced. | AUDIT_PLAN.md R1 carries the full probe history |
 | F88 | the bid ledger can resolve losses and rival bids from the failed-claims log (B14's "a lost claim never becomes a transaction" was false) | not blocked; tests-first change to `bid_ledger.reconcile` |
 | Phase 8 | engineering / decomposition | only with the golden master — which now exists |
 
@@ -390,6 +390,13 @@ than "fixed": the measurement said the code was right.
   DEFAULT ARGUMENT, so the patch did nothing and two rows went to the real log; correct values,
   but written by a harness and claiming to be sync readings, so the file was deleted rather
   than kept. Same class as H2. `check_test_isolation` CLEAN.
+- **F90** CI reported green while the suite failed, for two months — RESOLVED: the `ci` job's
+  pwsh step took its result from `coverage report`, the last native command, so every green run
+  sampled 2026-09-16 → 11-01 logged `FAILED (failures=1..2)`, including at the v11.0.0 and v11.1.0
+  tags. What it hid: the bash syntax guard ran bare `"bash"`, which Windows resolves to System32's
+  WSL launcher, distro-less on the runner. Fixed tests-first; the first genuinely green CI suite is
+  run 46037394306 (2475 OK). The goldens step was never affected. Not demonstrated: the step going
+  red on a failing suite on the runner (rests on the guard test and pwsh's exit semantics).
 - **F88** lost waiver claims ARE in Sleeper's feed — OPEN (the F31 half measured and cleared):
   B14 built the bid ledger on "a lost claim never becomes a transaction", and it is false. The
   feed returns each lost claim as a `failed` waiver with its bid and reason: 13 in 2026 through

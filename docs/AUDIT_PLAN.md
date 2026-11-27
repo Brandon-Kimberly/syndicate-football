@@ -6729,3 +6729,45 @@ as the tier source (ties the engine's, 0.113 vs 0.112); a snap-share trend as a 
 
 **Open.** The environment share is one season's four weeks (interval ~0.35-1.07) and is monitored, not
 settled. The known-absence assumption for a drawn Questionable miss rests on 0 of 11 locked zeros.
+
+### F90 — CI reported green while the suite failed, for two months — RESOLVED (2026-11-27)
+
+**Found by reading the log, not the badge.** Catching up after five weeks away, the last green
+`ci` run on `main` (2026-10-23, `1d9d2e9`) logged `Ran 2470 tests ... FAILED (failures=1,
+skipped=7, expected failures=3)` under a step marked success. Every green run sampled from
+2026-09-16 to 2026-11-01 did the same — `failures=1` or `2`, some with `errors=1..2`, including
+the runs at the v11.0.0 (MAJOR) and v11.1.0 tags. Two defects, each hiding the other:
+
+1. **The step could not fail on the suite.** `ci` runs on `windows-latest`, where a `run:`
+   block defaults to pwsh, and GitHub's pwsh wrapper takes the step result from
+   `$LASTEXITCODE` of the **last** native command; `ErrorActionPreference=stop` does not apply
+   to native exit codes. The block was `coverage run -m unittest ...` then `coverage report`,
+   and the report always succeeds. In place since F26 wired coverage in (2026-09-02).
+2. **The failure it hid was environmental.** `test_workflows`' bash syntax guard ran bare
+   `"bash"`, which CreateProcess resolves from System32 before PATH — the WSL launcher. With a
+   distro installed (the owner's machine) that works; the runner has none, so the launcher
+   exited non-zero with its message on stdout, and every one of 33 blocks was reported
+   unparseable with an EMPTY stderr. The earlier extra failures and errors were not diagnosed:
+   the runs that carried them are past and their causes were fixed or vanished unrecorded.
+
+**Why it matters.** R1 makes the owner's machine untrustworthy under load, and the standing
+mitigation was "CI on a cloud Windows runner certifies every commit on a fault-free machine" —
+written into AUDIT_SUMMARY's R1 row and the v11.0.0 / v11.1.0 release notes. For at least ten
+weeks that certificate certified only that `coverage report` printed. The golden-master step was
+never affected (one command), so the goldens' byte-exact verdicts stand.
+
+**Fixed (tests first, `76bb25c` red, `8e9e043` fix).** The suite step checks `$LASTEXITCODE`
+after `coverage run` (the report still prints on failure); `TestPwshStepsFailOnAFailedCommand`
+fails on any windows pwsh block that runs a native command before its last line without that
+check. The guard resolves Git for Windows' bash next to `git` (`_bash_exe`);
+`TestTheSyntaxGuardRunsARealBash` spies on what the guard executes and fails on a bare name or a
+System32 path. Mutation-checked: the resolved bash rejects the 2026-09-09 apostrophe parse error
+(exit 2) and accepts a clean block.
+
+**Verified on the runner:** CI run 46037394306 on `8e9e043` logged `Ran 2475 tests ... OK
+(skipped=7, expected failures=3)` and the goldens 15/15 — the first genuinely green suite on CI
+in the sampled history. skipped=7 equals every prior run, so the bash guard RAN (a skip would
+read 8). **Not demonstrated:** a red suite turning the step red on the runner; that rests on the
+guard test and pwsh's documented exit semantics.
+
+Suite 2473 → 2475 (characterisation, 2 red of 2). Goldens unchanged. RESOLVED.
