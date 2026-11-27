@@ -103,10 +103,13 @@ class TestTheLuckPage(Case):
             self.assertNotIn(combined, visible_text(body).lower())
 
     def test_a_file_older_than_the_closed_weeks_says_to_rerun(self):
+        """The link to the tool is the developer view's: the simple view refuses the luck
+        ledger's form with a 404, so a link to it there was a dead end (found 2026-11-27)."""
         self.save(_league_accounting(self.teams, [1]))            # the fixture has two weeks played
         text = visible_text(self.get("/luck", "simple"))
         self.assertIn("Weeks have finished since this was worked out", text)
-        self.assertIn('href="/tools/luck_ledger"', self.get("/luck", "simple"))
+        self.assertIn('href="/tools/luck_ledger"', self.get("/luck", "dev"))
+        self.assertNotIn('href="/tools/luck_ledger"', self.get("/luck", "simple"))
 
     def test_a_stale_file_says_it_catches_up_on_its_own_in_both_views(self):
         """A good local sync now reruns the luck ledger (fantasy_sim.luck_refresh), so the page
@@ -121,10 +124,13 @@ class TestTheLuckPage(Case):
                     self.assertEqual([t for t in DEV_TERMS if t in text], [])
 
     def test_without_a_file_it_says_how_to_get_one(self):
-        body = self.get("/luck", "simple")
+        body = self.get("/luck", "dev")
         self.assertIn("shows here once the luck ledger has run", visible_text(body))
         self.assertIn('href="/tools/luck_ledger"', body)
         self.assertNotIn("Wins and luck", visible_text(body))
+        simple = self.get("/luck", "simple")
+        self.assertNotIn('href="/tools/luck_ledger"', simple)
+        self.assertIn("shows here once the league's data has next been brought up to date", visible_text(simple))
 
     def test_another_team_gets_its_own_numbers(self):
         acc = _league_accounting(self.teams, range(1, 3))
@@ -133,6 +139,36 @@ class TestTheLuckPage(Case):
         body = self.get(f"/luck?team={render.slug(other)}", "simple")
         want = f"{acc['teams'][other]['parts']['total']['wins']:+.1f}"
         self.assertIn(want, visible_text(body))
+
+
+class TestTheToolForm(Case):
+    """Item 4 of 2026-11-27: every season by default, and no week field -- the ledger finds the
+    closed weeks itself (F95), and --week only ever trimmed the current season. The CLI keeps
+    --week (tests.test_luck_ledger_fixes still passes it)."""
+
+    def post(self, data):
+        runner = FakeRunner()
+        st = Settings(self.root)
+        st.set_mode("dev")
+        app = create_app(self.root, runner=runner, csrf_token="tok", settings=st,
+                         live=LiveBoard(self.root, MY_TEAM, league_id=None, fetch=None))
+        app.testing = True
+        r = app.test_client().post("/tools/luck_ledger", data=dict(data, _csrf="tok"))
+        self.assertEqual(r.status_code, 302, r.get_data(as_text=True)[:400])
+        return runner.launches[-1][0]
+
+    def test_every_season_is_ticked_and_there_is_no_week(self):
+        from webui.tools import TOOLS
+        self.assertNotIn("week", [f.name for f in TOOLS["luck_ledger"].fields])
+        body = self.get("/tools/luck_ledger", "dev")
+        self.assertRegex(body, r'<input type="checkbox" id="f_all"[^>]*checked')
+        self.assertNotIn('id="f_week"', body)
+
+    def test_the_tick_is_honoured_either_way(self):
+        self.assertIn("--all", self.post({"all": "1"}))
+        argv = self.post({})                                   # a browser sends nothing when unticked
+        self.assertNotIn("--all", argv)
+        self.assertNotIn("--week", argv)
 
 
 class TestTheBars(unittest.TestCase):
@@ -194,6 +230,21 @@ class TestTheJobPage(Case):
                                   tool="luck_ledger")
         self.assertEqual(view["tiles"][0]["k"], "schedule luck")
         self.assertFalse(view["sections"][0]["collapsed"])
+
+    def test_the_title_is_said_once(self):
+        """Item 6: a blank form's label is just "Luck ledger", and the page printed it under the
+        same heading. The line under the heading carries only what the title does not."""
+        for label, lede in (("Luck ledger", None), ("Luck ledger · 2026", "2026")):
+            runner, jid = self._job(self._payload())
+            runner.metas[jid]["label"] = label
+            for mode in ("dev", "simple"):
+                with self.subTest(label=label, mode=mode):
+                    body = self.get(render.job_url({"id": jid}), mode, runner=runner)
+                    got = re.search(r'<p class="lede">(.*?)</p>', body, re.S)
+                    if lede is None:
+                        self.assertIsNone(got, got and got.group(1))
+                    else:
+                        self.assertEqual(got.group(1).strip(), lede)
 
     def test_the_page_draws_the_bars_in_both_views(self):
         runner, jid = self._job(self._payload())
