@@ -1,9 +1,11 @@
 """webui.luck -- the luck ledger, pulled not pushed (docs/WEB_UI_ROADMAP.md UI-R6).
 
-The owner's call: luck is looked up, never put on Sunday's front page. This page renders the
-ledger's five PRE-REGISTERED measures (fantasy_sim.luck_ledger, docs/LUCK_LEDGER.md) for one
-team -- no sixth measure (Decision 2 governs new ones) and no combined score, exactly as the
-module refuses one. It is reached from team pages and the palette and never from Home.
+The owner's call: luck is looked up, never put on Sunday's front page. This page leads with the
+WINS ACCOUNTING (docs/LUCK_LEDGER.md Addendum 2, owner ruling 2026-11-27: one total, because it
+is an identity whose parts are always shown with it), then the ledger's five PRE-REGISTERED
+measures (fantasy_sim.luck_ledger) for one team -- no sixth measure (Decision 2 governs new
+ones) and none of the five added to anything. It is reached from team pages and the palette
+and never from Home.
 
 The inputs are the ones scripts.luck_ledger fetches, read from disk instead:
   weekly scores   current/weekly_actuals.json (Sleeper's box scores -- re-scored weeks
@@ -103,6 +105,131 @@ def report(root, team):
         rows.append(row)
     return {"team": team, "weeks": n, "early": early, "min_weeks": MIN_WEEKS_FOR_INFERENCE, "rows": rows,
             "disagreement": res.get("banked_disagreement")}
+
+
+# ---- the wins accounting (docs/LUCK_LEDGER.md Addendum 2, owner ruling 2026-11-27) ----------
+# One total, in wins, from parts that add up exactly; the five above stay separate and are
+# never added in. scripts.luck_ledger computes it (it needs Sleeper's archived projections,
+# which the web UI never fetches) and saves the league-wide result under data/local/luck/;
+# this page reads the newest. Shared with the job page (webui.render._luck).
+
+PARTS = (
+    ("performance", "Players vs projection", "head-to-head games: your all-play record against the one your started lineups were projected to earn"),
+    ("median", "Players vs projection, median games", "median wins against the ones your projections earned (a median game has no schedule, so this is player luck too)"),
+    ("schedule", "Schedule", "head-to-head wins against your all-play record: who you happened to play, and when"),
+)
+
+
+def ordinal(n):
+    try:
+        n = int(n)
+    except (TypeError, ValueError):
+        return "—"
+    return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
+
+
+def odds_text(part, unit="seasons"):
+    """'unusual · about 1 in 19 seasons this unlucky or more', in the registered words."""
+    if not part or part.get("share") is None:
+        return "too early to say: fewer than %d weeks" % MIN_WEEKS_FOR_INFERENCE
+    if part.get("way") == "neutral":
+        return "no luck either way"
+    n = part.get("one_in")
+    odds = f"about 1 in {n}" if n else f"rarer than 1 in {part.get('one_in_floor')}"
+    return f"{part.get('word')} · {odds} {unit} this {part.get('way')} or more"
+
+
+def bar_rows(view):
+    """The parts and the total as centred bars, one scale for all of them (in wins)."""
+    parts = (view or {}).get("parts") or {}
+    rows = []
+    for key, label, what in PARTS:
+        p = parts.get(key)
+        if p:
+            rows.append({"label": label, "what": what, "wins": float(p["wins"]), "odds": odds_text(p), "total": False})
+    t = parts.get("total")
+    if t:
+        rows.append({"label": "Total", "what": "the parts above, added; nothing else goes in",
+                     "wins": float(t["wins"]), "odds": odds_text(t), "total": True})
+    scale = max([1.0] + [abs(r["wins"]) for r in rows])
+    for r in rows:
+        w = r["wins"]
+        r["tone"] = "pos" if w >= 0.05 else ("neg" if w <= -0.05 else "")
+        r["left"] = round(50.0 + min(0.0, w) / scale * 50.0, 2)
+        r["width"] = round(abs(w) / scale * 50.0, 2)
+        r["text"] = f"{w:+.1f}"
+    return rows
+
+
+def explain_lines(view):
+    """'Where it came from', in sentences. Never added to anything."""
+    x = (view or {}).get("explain") or {}
+    out = []
+    v = x.get("vs_projection_relative")
+    if v is not None:
+        out.append(f"Your starters scored {abs(v):.1f} points a week {'more' if v >= 0 else 'less'} against their "
+                   f"projections than the league's did ({x.get('scored_per_week', 0):.1f} scored, "
+                   f"{x.get('projected_per_week', 0):.1f} projected, a week).")
+    v = x.get("dnp_points_relative")
+    if v is not None:
+        out.append(f"Starters who scored nothing cost you {abs(v):.1f} points a week {'more' if v >= 0 else 'less'} "
+                   f"than the league average.")
+    return out
+
+
+def standings_rows(acc):
+    rows = []
+    for r in (acc or {}).get("standings") or []:
+        rows.append(dict(r, actual_rank_text=ordinal(r.get("actual_rank")), neutral_rank_text=ordinal(r.get("neutral_rank")),
+                         move=(r.get("actual_rank") or 0) - (r.get("neutral_rank") or 0)))
+    return rows
+
+
+def headline(view):
+    """The four facts a reader wants first: luck in wins, how unusual, wins vs earned, rank."""
+    if not view:
+        return None
+    t = view["parts"]["total"]
+    if t.get("share") is None:
+        short, word_ = "too early", f"fewer than {MIN_WEEKS_FOR_INFERENCE} weeks"
+    elif t.get("way") == "neutral":
+        short, word_ = "even", "no luck either way"
+    else:
+        short = f"1 in {t['one_in']}" if t.get("one_in") else f"under 1 in {t.get('one_in_floor')}"
+        word_ = f"{t.get('word')}: seasons this {t.get('way')} or more"
+    return {"luck": float(t["wins"]), "luck_text": f"{t['wins']:+.1f}", "tone": "pos" if t["wins"] >= 0.05 else ("neg" if t["wins"] <= -0.05 else ""),
+            "odds": odds_text(t), "odds_short": short, "odds_word": word_,
+            "actual": view["actual"]["total"], "expected": view["expected"]["total"],
+            "actual_rank": ordinal(view.get("actual_rank")), "neutral_rank": ordinal(view.get("neutral_rank"))}
+
+
+def load_accounting(root):
+    """The newest saved league accounting, or None. data/local is never served, so this opens
+    the file directly rather than through root.read_json."""
+    import glob
+    import os
+    files = sorted(glob.glob(os.path.join(root.local, "luck", "accounting_*.json")))
+    if not files:
+        return None
+    try:
+        with open(files[-1], encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return None
+
+
+def accounting_for(root, team, closed_weeks=None):
+    """The page's view of the saved accounting for `team`: None without a saved file, or with
+    one that does not cover the team. `stale` when weeks have closed since it was computed."""
+    acc = load_accounting(root)
+    if not acc or team not in (acc.get("teams") or {}):
+        return {"missing": True, "season": (acc or {}).get("season")} if not acc else None
+    view = dict(acc["teams"][team], team=team, weeks=acc.get("weeks") or [])
+    last = max(view["weeks"] or [0])
+    return {"missing": False, "season": acc.get("season"), "computed_at": acc.get("computed_at"),
+            "weeks": len(view["weeks"]), "stale": bool(closed_weeks and max(closed_weeks) > last),
+            "head": headline(view), "bars": bar_rows(view), "explain": explain_lines(view),
+            "standings": standings_rows(acc), "left_out": acc.get("left_out") or []}
 
 
 # ---- Decision 2 (owner ruling 2026-09-29): the three measures pre-registered in

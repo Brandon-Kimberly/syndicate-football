@@ -538,8 +538,10 @@ def create_app(root, overlay=None, csrf_token=None, port=None, runner=None, live
         team = objects.team_for_slug(root, want) if want else MY_TEAM
         if not team:
             abort(404)
-        return render_template("luck.html", r=luckmod.report(root, team), teams=objects._teams(root),
-                               late=luckmod.late_measures(root, team), swap=luckmod.swap_matrix(root))     # Decision 2
+        r = luckmod.report(root, team)
+        return render_template("luck.html", r=r, teams=objects._teams(root),
+                               late=luckmod.late_measures(root, team), swap=luckmod.swap_matrix(root),     # Decision 2
+                               acc=luckmod.accounting_for(root, team, closed_weeks=list(range(1, r["weeks"] + 1))))   # Addendum 2
 
     @app.route("/history/<int:season>")
     def season_history(season):

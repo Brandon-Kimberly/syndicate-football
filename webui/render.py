@@ -639,8 +639,49 @@ def _live_matchup(d):
 
 
 def _luck(d):
+    """The wins accounting first (docs/LUCK_LEDGER.md Addendum 2), then the five registered
+    measures per season, collapsed when the accounting is there to read first."""
+    from webui.luck import bar_rows, explain_lines, headline, odds_text, ordinal, standings_rows
     seasons = d.get("seasons") if isinstance(d.get("seasons"), list) else [d]
-    secs = []
+    first = seasons[0] if seasons else {}
+    head = headline(first.get("accounting"))
+    pooled = first.get("across_seasons")
+    tiles, secs = [], []
+    if head:
+        tiles = [tile("luck, in wins", head["luck_text"], f"{fwins(head['actual'])} wins; the lineups started were projected to earn {fnum(head['expected'], 1)}", head["tone"]),
+                 tile("how unusual", head["odds_short"], head["odds_word"]),
+                 tile("standings", f"{head['actual_rank']} → {head['neutral_rank']}", "as played → with every team's luck taken out")]
+    if pooled:
+        tiles.append(tile(f"across {pooled.get('seasons')} seasons", fsigned(pooled.get("wins"), 1),
+                          odds_text(pooled, unit=f"runs of {pooled.get('seasons')} seasons"), tone(pooled.get("wins"))))
+    with_acc = [sn for sn in seasons if sn.get("accounting")]
+    if len(with_acc) > 1:
+        rows = []
+        for sn in with_acc:
+            a = sn["accounting"]
+            p = a["parts"]
+            rows.append({"season": sn.get("season"), "team": sn.get("team"), "wins": a["actual"]["total"],
+                         "earned": a["expected"]["total"], "players": p["performance"]["wins"],
+                         "players_median": (p.get("median") or {}).get("wins"), "schedule": p["schedule"]["wins"],
+                         "total": p["total"]["wins"], "ranks": f"{ordinal(a.get('actual_rank'))} → {ordinal(a.get('neutral_rank'))}"})
+        secs.append(table("Season by season", [col("season"), col("team"), col("wins", kind="num", nd=1), col("earned", "projected to earn", "num", 1),
+                                               col("players", "players vs projection", "signed", 1), col("players_median", "players, median games", "signed", 1),
+                                               col("schedule", kind="signed", nd=1), col("total", "luck", "signed", 1), col("ranks", "rank: played → luck out")], rows,
+                          note="each season's luck in wins; the parts add up to the total"
+                               + (". The across-seasons total was added after the per-season numbers were seen" if pooled else "")))
+    for sn in seasons:
+        a = sn.get("accounting")
+        label = f"{sn.get('team')} · {sn.get('season')}"
+        if a:
+            secs.append({"kind": "bars", "title": f"Where the luck went · {label}", "bars": bar_rows(a),
+                         "note": f"{len(a.get('weeks') or [])} weeks, in wins against what the lineups started were projected to earn",
+                         "foot": " ".join(explain_lines(a) + ["Points against, close games and starters who didn't play are how these parts happen, so they are shown below and never added in."])})
+            me = sn.get("team")
+            secs.append(table(f"Standings with every team's luck taken out · {sn.get('season')}",
+                              [col("team"), col("actual_wins", "wins", "num", 1), col("neutral_wins", "luck-neutral wins", "num", 1),
+                               col("luck", kind="signed", nd=1), col("actual_rank_text", "rank as played"), col("neutral_rank_text", "rank, luck out")],
+                              [dict(r, me=r.get("team") == me) for r in standings_rows(a)], me_key="team", collapsed=True,
+                              note="luck-neutral wins are what each team's started lineups were projected to earn"))
     for sn in seasons:
         rows = []
         for key, label in (("schedule_luck", "schedule luck"), ("opponent_luck", "opponent luck"), ("close_games", "close games"),
@@ -652,16 +693,18 @@ def _luck(d):
             elif isinstance(m, str):
                 rows.append({"measure": label, "detail": m})
         wk = sn.get("weeks") or []
-        secs.append(table(f"{sn.get('team')} · {sn.get('season')} · {len(wk)} completed week{'s' if len(wk) != 1 else ''}",
+        secs.append(table(f"The five measures set before the season · {sn.get('team')} · {sn.get('season')} · {len(wk)} completed week{'s' if len(wk) != 1 else ''}",
                           [col("measure"), col("delta", "Δ vs league", "signed", 2), col("se", "± se", "num", 2), col("z", kind="signed", nd=2),
-                           col("p", kind="num", nd=3), col("detail")], rows,
+                           col("p", kind="num", nd=3), col("detail")], rows, collapsed=bool(sn.get("accounting")),
                           note="negative means unlucky on that measure; z and p stay blank until six weeks are in (F53)"))
-    first = seasons[0] if seasons else {}
     sl = first.get("schedule_luck") or {}
-    return {"title": "Luck ledger", "subtitle": "five measures set before the season, each against the league average",
-            "tiles": [tile("schedule luck", fsigned((sl or {}).get("delta"), 2) if isinstance(sl, dict) else "—", "actual minus expected wins", tone((sl or {}).get("delta") if isinstance(sl, dict) else None)),
-                      tile("seasons", str(len(seasons)), "")],
-            "sections": secs}
+    if not tiles:
+        tiles = [tile("schedule luck", fsigned((sl or {}).get("delta"), 2) if isinstance(sl, dict) else "—", "actual minus expected wins", tone((sl or {}).get("delta") if isinstance(sl, dict) else None)),
+                 tile("seasons", str(len(seasons)), "")]
+    return {"title": "Luck ledger",
+            "subtitle": ("wins against what the lineups started were projected to earn, split into parts that add up; then the five measures set before the season"
+                         if head else "five measures set before the season, each against the league average"),
+            "tiles": tiles, "sections": secs}
 
 
 def _odds_history(d):
