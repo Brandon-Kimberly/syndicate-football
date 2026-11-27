@@ -208,5 +208,33 @@ class TestFaabAdjustmentIsBenign(unittest.TestCase):
         self.assertEqual(g["verdict"], REPORT_ONLY)
 
 
+class TestWeatherLookupFailureIsBenign(unittest.TestCase):
+    """Found as issue #55 (2026-11-25): the forecast endpoint timed out for 8 games, sync
+    logged its one-line WEATHER warning (F57), and the gate had never seen that text, so it
+    read as blocking:unrecognized and the week-11 run3_tuesday window was missed. Benign for
+    the forecast because weather is read by nothing that computes (F55, verified 2026-11-27:
+    the only readers are the matchup_watch / weekly_report display tables, which render a
+    NULL as '-'). Stops being benign the day F55 adopts a weather term. Written before the
+    marker was added: the first assertion failed with 'blocking:unrecognized'."""
+
+    ENTRY = ("WARNING | WEATHER (week 12): the forecast lookup failed for 8 game(s) [BUF (ReadTimeout), "
+             "PIT (ReadTimeout), CIN (ReadTimeout), JAX (ReadTimeout), MIA (ReadTimeout), SF (ReadTimeout), "
+             "CLE (ReadTimeout), TB (ReadTimeout)]; those carry weather_source='unavailable' with NULL wind "
+             "and precipitation (B18 fault 3), so a dead endpoint no longer reads as a calm day. Nothing "
+             "consumes these fields yet (F55) -- today this is a dead field, not a biased projection, and "
+             "that stops being true the moment F55's offseason study adopts a term.")
+
+    def test_the_weather_failure_warning_is_benign(self):
+        self.assertEqual(classify_degraded_entry(self.ENTRY), "benign")
+
+    def test_a_sync_carrying_one_quotes_canonically(self):
+        g = canonical_gate("DEGRADED", BENIGN + [self.ENTRY], "odds_api", baselines_count=888)
+        self.assertEqual(g["verdict"], CANONICAL_OK)
+
+    def test_a_real_blocker_beside_it_still_blocks(self):
+        g = canonical_gate("DEGRADED", BENIGN + [self.ENTRY, TYSON], "odds_api", baselines_count=888)
+        self.assertEqual(g["verdict"], REPORT_ONLY)
+
+
 if __name__ == "__main__":
     unittest.main()
