@@ -12,8 +12,9 @@ any bid heuristic here works.
 as a `waiver` with `status: "failed"`, and the sync now logs those to
 `data/logs/failed_claims.jsonl`, each paired with the claim that beat it. The paragraph below
 is left as written. Its conclusion, a ledger written at bid time, still holds, because the
-suggestion must be recorded before the outcome. Its premise does not. Reading losses and
-rival bids from the new log is F88's open half.
+suggestion must be recorded before the outcome. Its premise does not. `reconcile` now reads
+that log (F88's second half, 2026-11-27): my own failed row makes a claim a LOSS, and the
+failed rows paired to a claim I won are its rival bids.
 
 **WHY THIS IS NOT MORE FIELDS ON THE DECISION LOG.** Measured before building it: all 26
 waiver rows in `decision_log.jsonl` are COMPLETED transactions, because a lost waiver
@@ -209,8 +210,19 @@ def _parse_stamp(value):
 MATCH_WINDOW_DAYS = 4
 
 
-def reconcile(ledger_rows, decision_rows):
-    """Fill `won` and `winning_bid_if_visible` from completed transactions.
+def reconcile(ledger_rows, decision_rows, failed_rows=None):
+    """Fill `won` and `winning_bid_if_visible` from completed transactions, and -- given the
+    sync's failed claims (data/logs/failed_claims.jsonl, F88) -- losses and rival bids.
+
+    F88. A claim no completed transaction resolves but MY OWN failed row matches (same
+    player, the same time-proximity rule) is a LOSS: `won` False, `lost_reason` from Sleeper
+    (outbid, roster_full, other), and the winner's bid when there was a winner. A roster_full
+    failure has no winner and so no price; calibration keeps it apart (`lost_without_price`).
+    A claim I WON takes as `rival_bids` the bids of the failed rows paired to its transaction
+    (`won_by`), source `failed_claims`, unless the row already carries a hand-recorded list,
+    which is kept -- a different logged list is surfaced as `rival_bids_logged`. A win with no
+    paired failed rows gets none: the log cannot tell "uncontested" from "not seen".
+    Without `failed_rows` this is exactly the reconcile below.
 
     Matching is on `player_id` plus TIME PROXIMITY, not on (player_id, week) -- F65.
 
@@ -243,11 +255,24 @@ def reconcile(ledger_rows, decision_rows):
             if pid is not None:
                 by_pid.setdefault(str(pid), []).append(r)
 
+    my_failed, beaten_by = {}, {}
+    for f in failed_rows or []:
+        if f.get("is_mine") and f.get("player_id") is not None:
+            my_failed.setdefault(str(f["player_id"]), []).append(f)
+        tid = (f.get("won_by") or {}).get("transaction_id")
+        if tid is not None and f.get("faab_bid") is not None:
+            beaten_by.setdefault(str(tid), []).append(f)
+
     out = []
     for row in ledger_rows or []:
         row = dict(row)
         hit = _best_match(row, by_pid.get(str(row.get("player_id"))) or [])
-        if hit is None:
+        lost = _best_match(row, my_failed.get(str(row.get("player_id"))) or []) if failed_rows else None
+        if hit is None and lost is not None:
+            row["won"] = False
+            row["winning_bid_if_visible"] = (lost.get("won_by") or {}).get("faab_bid")
+            row["bid_mismatch"] = None
+        elif hit is None:
             row["won"], row["winning_bid_if_visible"] = None, None
             row["bid_mismatch"] = None
         else:
@@ -260,6 +285,15 @@ def reconcile(ledger_rows, decision_rows):
             placed = row.get("bid_placed")
             row["bid_mismatch"] = (charged if row["won"] and charged is not None
                                    and placed is not None and charged != placed else None)
+        if lost is not None and row["won"] is False:
+            row["lost_reason"] = lost.get("reason")
+        if row["won"] and hit is not None and failed_rows:
+            logged = sorted((int(f["faab_bid"]) for f in beaten_by.get(str(hit.get("transaction_id")), [])),
+                            reverse=True)
+            if logged and not row.get("rival_bids"):
+                row["rival_bids"], row["rival_bids_source"] = logged, "failed_claims"
+            elif logged and sorted(row["rival_bids"], reverse=True) != logged:
+                row["rival_bids_logged"] = logged
         out.append(row)
     return out
 
@@ -302,10 +336,17 @@ def calibration(rows):
                 if r.get("won") is not None
                 and (clearing_price(r) is not None
                      or r.get("winning_bid_if_visible") is not None)]
+    # F88: a loss nobody won (roster_full) is resolved but has no price, so it says nothing
+    # about the bid -- neither scored nor called unresolved.
+    scored_ids = {id(r) for r in resolved}
+    no_price = [r for r in claims if r.get("won") is False and id(r) not in scored_ids]
     exact = [r for r in resolved if clearing_price(r) is not None]
     out = {"n": len(resolved), "n_exact": len(exact),
-           "unresolved": len(claims) - len(resolved),
+           "unresolved": len(claims) - len(resolved) - len(no_price),
+           "lost_without_price": len(no_price),
            "superseded": len(rows or []) - len(claims)}
+    priceless = (f"; {len(no_price)} lost without a price (the claim failed for a reason "
+                 f"other than the bid) and is not scored" if no_price else "")
 
     def _score(row, suggested):
         """Exact price where the rivals are known, censored bound otherwise.
@@ -329,7 +370,7 @@ def calibration(rows):
     if not resolved:
         out["verdict"] = "no resolved claims yet"
         out["note"] = (f"{out['unresolved']} unresolved row(s) excluded: a claim whose "
-                       f"waiver run has not happened is not evidence either way")
+                       f"waiver run has not happened is not evidence either way{priceless}")
         return out
 
     if len(resolved) < MIN_CLAIMS_FOR_A_VERDICT:
@@ -341,7 +382,7 @@ def calibration(rows):
         out["verdict"] = "v1 is closer"
     else:
         out["verdict"] = "tied"
-    out["note"] = (f"{out['unresolved']} unresolved row(s) excluded. "
+    out["note"] = (f"{out['unresolved']} unresolved row(s) excluded{priceless}. "
                    f"{out['n_exact']} of {out['n']} claim(s) carry an exact clearing price "
                    f"from recorded rival bids (best rival + 1) and are scored against it; "
                    f"the rest fall back to the censored rule, where a winning bid is an "
