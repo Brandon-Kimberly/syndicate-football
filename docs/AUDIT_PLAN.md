@@ -6642,7 +6642,7 @@ processes — and took a segmentation fault, R1's exact signature. That run was 
 void and the suite re-run alone after confirming zero Python processes. R1 is a hardware
 fault, not a code defect, and the rule is one engine process at a time.
 
-### F88 — Lost waiver claims ARE in Sleeper's feed: B14's premise was wrong — OPEN (2026-09-29; the F31 half measured and cleared)
+### F88 — Lost waiver claims ARE in Sleeper's feed: B14's premise was wrong — RESOLVED (2026-11-27; the F31 half measured and cleared 2026-09-29)
 
 Found building the web UI's losing-bids ledger (docs/WEB_UI_ROADMAP.md Decision 4, UI-W4).
 B14 built the bid ledger on the premise that "a lost waiver claim never becomes a
@@ -6694,6 +6694,23 @@ built to wait for:
 
 Wiring that into `bid_ledger.reconcile` changes what F61's calibration is scored on, so it
 is its own tests-first change. It moves no prediction; it moves a measurement's inputs.
+
+**The B14 half, BUILT (2026-11-27; tests first, red `13b4fbd`).** `bid_ledger.reconcile(ledger,
+decisions, failed)`:
+- a claim no completed transaction resolves, but whose OWN failed row matches (same player, the
+  same 4-day proximity rule as F65), is a LOSS: `won` False, `lost_reason` from Sleeper, and the
+  winner's bid when there was one. A failure nobody won (`roster_full`, `other`) has no price, so
+  `calibration` counts it as `lost_without_price` -- neither scored nor "unresolved";
+- a claim I WON takes the failed rows paired to its transaction (`won_by`) as `rival_bids`
+  (source `failed_claims`). A hand-recorded list is kept; a different logged one is surfaced as
+  `rival_bids_logged`. A win with nothing paired stays on the censored rule: the log cannot tell
+  "uncontested" from "a rival the sync never saw";
+- without the log, reconcile is unchanged (pinned). `scripts.bid_review` passes the log.
+On the real ledger (3 claims through week 3) no score moves: the 4046 claim's hand-typed rivals
+[21, 20] are exactly the two failed rows paired to it, and the Shough loss already resolved
+through the winner's completed claim; it now carries `lost_reason: outbid`. What changes is
+going forward: rival bids need no typing, and a roster-full failure stops sitting unresolved.
+RESOLVED.
 
 
 ### F89 — Constants derived from ten seasons of nflverse data; two held fixes decided on evidence — RESOLVED (2026-10-12) — MAJOR

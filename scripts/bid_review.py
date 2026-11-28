@@ -4,9 +4,14 @@ Running bid calibration: what I suggested, what I bid, what it cost (fantasy_sim
 
   py -3.10 -m scripts.bid_review                     # the ledger, reconciled and scored
   py -3.10 -m scripts.bid_review --add "Player" --bid 25 [--week N]   # record a claim
-  py -3.10 -m scripts.bid_review --record-rivals "Player" --rivals 21,20   # the losing bids
+  py -3.10 -m scripts.bid_review --record-rivals "Player" --rivals 21,20   # the losing bids, by hand
 
-RECORD THE LOSING BIDS AFTER EVERY RUN (T2). Sleeper shows them, and best-rival + 1 is the
+THE LOSING BIDS ARE READ AUTOMATICALLY NOW (F88, 2026-11-27): the sync logs every lost claim
+to data/logs/failed_claims.jsonl, and a claim I won takes the bids paired to it as its rivals;
+a claim whose own failed row matches is a loss, with Sleeper's reason. --record-rivals stays
+for a run the sync did not see; a hand list is kept and a different logged one is flagged.
+
+Why the losing bids matter (T2): Sleeper shows them, and best-rival + 1 is the
 EXACT clearing price. Without it a claim I WON gives only an upper bound on the price, and
 the scoring has to excuse any suggestion below my own bid (B13's censoring). With it,
 "would this suggestion have won?" is answerable whether I won or lost. The `paid` and
@@ -35,7 +40,23 @@ from fantasy_sim.bid_ledger import (
 from fantasy_sim.config import MY_TEAM as DEFAULT_TEAM, normalize_position
 from fantasy_sim.decisions import _entry, _rivals_needing, suggest_bid, suggest_bid_v2
 from fantasy_sim.simulation import FantasySimulationEngine
-from fantasy_sim.storage import DECISION_LOG_FILE
+from fantasy_sim.storage import DECISION_LOG_FILE, FAILED_CLAIMS_FILE
+
+
+def _failed():
+    """The lost claims the sync logs (F88): data/logs/failed_claims.jsonl, or [] without it."""
+    out = []
+    try:
+        with open(FAILED_CLAIMS_FILE, encoding="utf-8") as fh:
+            for line in fh:
+                if line.strip():
+                    try:
+                        out.append(json.loads(line))
+                    except ValueError:
+                        continue
+    except OSError:
+        pass
+    return out
 
 
 def _decisions():
@@ -119,7 +140,7 @@ def main(argv=None):
               f"What it cost me is unchanged (Sleeper is a first-price auction).")
         return n
 
-    all_rows = reconcile(load(), _decisions())
+    all_rows = reconcile(load(), _decisions(), _failed())
     cal = calibration(all_rows)
     # F64: a bid raised before the waiver run is ONE claim. The earlier row stays in the
     # file -- it is true that the bid was that much at that hour -- but it is not a claim

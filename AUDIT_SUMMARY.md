@@ -227,7 +227,6 @@ Plus two wrong-direction predictions recorded as information (F6's null result; 
 | F22 | IDP epistemic constants (volatility half closed by F28) | derive from F7's projection log after a season |
 | F15 / F26 | draft realized-value row; the ten untested sync handler bodies | season data; fake-HTTP layer respectively |
 | R1 | **machine-level fault under multi-core load — verdict: RMA.** MemTest86 clean, AV excluded, BIOS/microcode updated to 0x133 with Intel Default Settings — Arm D still fails 9/12 and 11/12, so the chip itself is degraded (Vmin Shift class). Load threshold is not safe even at 3 concurrent real engine processes (1/3 silent death, 2026-09-01, no Reliability Monitor trace). Rules: one engine process at a time; a crashed or impossible-error run is void. CI on a cloud Windows runner now provides an independent, fault-free machine certifying every commit. (F90: from at least 2026-09-16 to 2026-11-27 it certified only that the coverage report printed; the suite's exit code was swallowed. Fixed 2026-11-27.) Re-test = Arm D 12/12 after the CPU is replaced. | AUDIT_PLAN.md R1 carries the full probe history |
-| F88 | the bid ledger can resolve losses and rival bids from the failed-claims log (B14's "a lost claim never becomes a transaction" was false) | not blocked; tests-first change to `bid_ledger.reconcile` |
 | Phase 8 | engineering / decomposition | only with the golden master — which now exists |
 
 ## F9–F35 — follow-ups and measurements (2026-08-30 → 2026-09-03)
@@ -429,15 +428,17 @@ than "fixed": the measurement said the code was right.
   WSL launcher, distro-less on the runner. Fixed tests-first; the first genuinely green CI suite is
   run 46037394306 (2475 OK). The goldens step was never affected. Not demonstrated: the step going
   red on a failing suite on the runner (rests on the guard test and pwsh's exit semantics).
-- **F88** lost waiver claims ARE in Sleeper's feed — OPEN (the F31 half measured and cleared):
+- **F88** lost waiver claims ARE in Sleeper's feed — RESOLVED (the F31 half measured and cleared):
   B14 built the bid ledger on "a lost claim never becomes a transaction", and it is false. The
   feed returns each lost claim as a `failed` waiver with its bid and reason: 13 in 2026 through
   week 3, and 25 in 2025. Every outbid claim shares its winner's `status_updated` to the
   millisecond (11/11 and 19/19), so the sync now logs them to `failed_claims.jsonl`, paired by
   the run and never the leg (three cross a leg boundary). F31's bid curve was fitted to winning
   bids only, but every 2025 bid placed has median 4 / mean 7.46 against the winners' 4 / 7.35:
-  cleared, nothing to refit. Open: the bid ledger can now resolve losses and rival bids
-  automatically.
+  cleared, nothing to refit. Built 2026-11-27: `bid_ledger.reconcile` reads the log -- my own
+  failed row makes a claim a loss (a roster-full one is `lost_without_price`, not scored), and a
+  win's rival bids come from the rows paired to it. No real score moved: the one recorded rival
+  list (4046: [21, 20]) is exactly what the log pairs.
 - **F89** constants derived from ten seasons of nflverse data — RESOLVED (MAJOR): the engine
   drew Questionable and Doubtful players healthy (they play 73.9% and 1.6% of the time, n =
   6035 / 643; the practice report moves Questionable 0.51-0.91) and B4's "Sleeper already
