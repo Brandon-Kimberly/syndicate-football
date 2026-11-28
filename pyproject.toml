@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fantasy-sim"
-version = "12.2.1"
+version = "12.2.2"
 description = "Monte Carlo fantasy football simulation, calibration, and backtesting for an 8-team IDP Sleeper league."
 readme = "README.md"
 license = { file = "LICENSE" }

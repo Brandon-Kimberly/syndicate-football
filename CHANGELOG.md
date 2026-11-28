@@ -5,6 +5,17 @@ in it, audit counts, hardware/season blockers, backlog, and what the tag does *n
 claim) live on the linked release. MAJOR means the model's predictions changed
 materially (see the release policy in `CLAUDE.md`).
 
+## [v12.2.2](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v12.2.2) — 2026-11-27 (PATCH)
+
+**The bid review reads Sleeper's lost claims (F88).** The sync has logged every lost waiver claim
+since 2026-09-29; the bid ledger now uses them. A claim of mine that failed is a loss with
+Sleeper's reason (and the winner's bid when outbid); a roster-full failure, which nobody won, is
+kept out of the bid scoring instead of sitting "unresolved" forever. A claim I won takes the bids
+that lost to it as its rival bids, so `--record-rivals` is no longer needed; a hand-typed list is
+kept, and a different logged one is flagged. On the real ledger no score moves: the one
+hand-typed list (21, 20) is exactly what the log pairs. The model is untouched: goldens 15/15
+byte-identical. The suite goes 2558 → 2568.
+
 ## [v12.2.1](https://github.com/Brandon-Kimberly/syndicate-football/releases/tag/v12.2.1) — 2026-11-27 (PATCH)
 
 **The luck ledger stops counting an archive gap as luck.** Sleeper's projection archive held no
